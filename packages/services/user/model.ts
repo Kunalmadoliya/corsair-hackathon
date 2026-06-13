@@ -53,3 +53,12 @@ export const verifyEmailInput = z.object({
 export type VerifyEmailInputType = z.infer<
   typeof verifyEmailInput
 >
+
+export const logoutOutputModel = z.object({
+  success: z.boolean().describe("Success status"),
+  message: z.string().describe("Message")
+})
+
+export type LogoutOutputModelType = z.infer<
+  typeof logoutOutputModel
+>

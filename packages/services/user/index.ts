@@ -103,15 +103,12 @@ class UserService {
 
       await sendVerificationEmail(
         email,
-        `${env.BASE_URL}/verify-email?token=${generateVerificationToken}`
+        `${env.WEB_URL}/verify-email?token=${generateVerificationToken}`
       );
-
-
 
       return {
         success: true,
         id: userId,
-        generateVerificationToken,
         message: "Verification email sent successfully",
       };
     } catch (error) {
@@ -121,36 +118,112 @@ class UserService {
   }
 
   public async loginUserWithEmailAndPassword(payload: LoginUserWithEmailAndPasswordInputModelType) {
-
-  }
-  public async logoutUser() {
-
-  }
-
-  public async verifyEmail(payload: VerifyEmailInputType) {
     try {
-      const { token } = await verifyEmailInput.parseAsync(payload)
+      const { email, password } = await loginUserWithEmailAndPasswordInputModel.parseAsync(payload)
 
-      const decoded = await jwt.verify(
-        token,
-        env.JWT_SECRET
-      )
+      const existingUser = await this.getUserWithEmail(email)
 
-      if (typeof decoded !== "object" || decoded === null || !("userId" in decoded)) {
-        throw new Error("Invalid token")
+      if (!existingUser) {
+        throw new Error("Invalid email or password")
       }
 
-      await db.update(usersTable).set({ emailVerifiedAt: new Date() }).where(eq(usersTable.id, decoded.userId))
+      if (!existingUser.emailVerifiedAt) {
+        throw new Error("Please verify your email before logging in")
+      }
+
+      if (!existingUser.passwordHash) {
+        throw new Error("This account uses a different login method")
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, existingUser.passwordHash)
+
+      if (!isPasswordValid) {
+        throw new Error("Invalid email or password")
+      }
+
+      const token = await this.generateJwtToken(existingUser.id)
 
       return {
-        success: true,
-        message: "Email verified successfully",
+        id: existingUser.id,
+        token,
       }
     } catch (error) {
-      console.error(error);
-      throw error;
+      console.error(error)
+      throw error
     }
   }
+
+  public async logoutUser() {
+    return {
+      success: true,
+      message: "Logged out successfully",
+    }
+  }
+
+public async verifyEmail(payload: VerifyEmailInputType) {
+  try {
+    const { token } = await verifyEmailInput.parseAsync(payload);
+
+    const decoded = jwt.verify(
+      token,
+      env.JWT_SECRET
+    ) as { userId: string };
+
+    const verification = await db
+      .select()
+      .from(emailVerificationsTable)
+      .where(eq(emailVerificationsTable.token, token));
+
+    const verificationRecord = verification[0];
+
+    if (!verificationRecord) {
+      throw new Error("Verification token not found");
+    }
+
+    if (verificationRecord.verifiedAt) {
+      throw new Error("Email already verified");
+    }
+
+    if (verificationRecord.expiresAt < new Date()) {
+      throw new Error("Verification token expired");
+    }
+
+    const user = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, verificationRecord.userId));
+
+    if (!user[0]) {
+      throw new Error("User not found");
+    }
+
+    if (user[0].emailVerifiedAt) {
+      throw new Error("Email already verified");
+    }
+
+    await db
+      .update(usersTable)
+      .set({
+        emailVerifiedAt: new Date(),
+      })
+      .where(eq(usersTable.id, verificationRecord.userId));
+
+    await db
+      .update(emailVerificationsTable)
+      .set({
+        verifiedAt: new Date(),
+      })
+      .where(eq(emailVerificationsTable.id, verificationRecord.id));
+
+    return {
+      success: true,
+      message: "Email verified successfully",
+    };
+  } catch (error) {
+    console.error("Verify Email Error:", error);
+    throw error;
+  }
+}
 
 }
 

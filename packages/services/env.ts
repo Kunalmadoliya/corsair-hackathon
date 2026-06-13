@@ -8,6 +8,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string(),
   EMAIL_FROM: z.string(),
   BASE_URL: z.string() , 
+  WEB_URL :z.string() ,
   NODE_ENV : z.string()
 });
 

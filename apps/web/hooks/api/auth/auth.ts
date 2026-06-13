@@ -7,6 +7,18 @@ export function useSignup() {
 }
 
 export function useVerifyEmail(token : string) {
-    const { data: verifyEmailData, isLoading: isVerifyEmailLoading, isError: isVerifyEmailError, error: verifyEmailError, isSuccess: isVerifyEmailSuccess, status: verifyEmailStatus } = trpc.auth.verifyEmail.useQuery({ token })
+    const { data: verifyEmailData, isLoading: isVerifyEmailLoading, isError: isVerifyEmailError, error: verifyEmailError, isSuccess: isVerifyEmailSuccess, status: verifyEmailStatus } = trpc.auth.verifyEmail.useQuery({ token } , {enabled: !!token,})
     return { verifyEmailData, isVerifyEmailLoading, isVerifyEmailError, verifyEmailError, isVerifyEmailSuccess, verifyEmailStatus }
+}
+
+export function useLogin() {
+    const { mutateAsync: loginUserEmailAndPasswordAsync, mutate: loginUserEmailAndPassword, error, failureCount, isError, isIdle, isSuccess, isPending, status } = trpc.auth.loginUserEmailAndPassword.useMutation()
+
+    return { loginUserEmailAndPasswordAsync, loginUserEmailAndPassword, error, failureCount, isError, isIdle, isSuccess, isPending, status }
+}
+
+export function useLogout() {
+    const { mutateAsync: logoutUserAsync, mutate: logoutUser, error, failureCount, isError, isIdle, isSuccess, isPending, status } = trpc.auth.logoutUser.useMutation()
+
+    return { logoutUserAsync, logoutUser, error, failureCount, isError, isIdle, isSuccess, isPending, status }
 }
