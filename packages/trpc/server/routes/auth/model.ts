@@ -8,5 +8,15 @@ export const createUserWithEmailAndPasswordInputModel = z.object({
 })
 
 export const createUserWithEmailAndPasswordOutputModel = z.object({
-    id : z.string().describe("Id of the user")
+    id: z.string().describe("Id of the user"),
 })
+
+export const verifyEmailInput = z.object({
+    token: z.string().describe("Token of the user")
+})
+
+export const verifyEmailOutput = z.object({
+    success: z.boolean().describe("Success status"),
+    message: z.string().describe("Message")
+})
+

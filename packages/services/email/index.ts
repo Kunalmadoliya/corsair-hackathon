@@ -3,6 +3,8 @@ import { env } from "../env";
 
 const resend = new Resend(env.RESEND_API_KEY);
 
+
+
 export async function sendVerificationEmail(
   email: string,
   verificationUrl: string
@@ -44,6 +46,10 @@ export async function sendVerificationEmail(
         `Failed to send verification email: ${error.message}`
       );
     }
+
+    console.log("RESEND_API_KEY:", env.RESEND_API_KEY?.slice(0, 8));
+console.log("EMAIL_FROM:", env.EMAIL_FROM);
+console.log("TO:", email);
 
     return {
       success: true,

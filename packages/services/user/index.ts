@@ -7,7 +7,9 @@ import {
   GetAuthenticationMethodOutputSchemaType,
   createUserWithEmailAndPasswordInputModel,
   loginUserWithEmailAndPasswordInputModel,
-  LoginUserWithEmailAndPasswordInputModelType
+  LoginUserWithEmailAndPasswordInputModelType,
+  verifyEmailInput,
+  VerifyEmailInputType
 } from "./model";
 
 import { sendVerificationEmail } from "../email/index"
@@ -19,7 +21,7 @@ class UserService {
   public async getAuthenticationMethods(): Promise<
     ReadonlyArray<GetAuthenticationMethodOutputSchemaType>
   > {
-    const supportedAuthenticationProviders: GetAuthenticationMethodOutputSchema[] = [];
+    const supportedAuthenticationProviders: GetAuthenticationMethodOutputSchemaType[] = [];
 
     const isGoogleConfigured = !!(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET);
 
@@ -88,12 +90,12 @@ class UserService {
         throw new Error("User creation failed");
       }
 
-      const verificationToken =
+      const generateVerificationToken =
         await this.generateJwtToken(userId);
 
       await db.insert(emailVerificationsTable).values({
         userId,
-        token: verificationToken,
+        token: generateVerificationToken,
         expiresAt: new Date(
           Date.now() + 60 * 60 * 1000
         ),
@@ -101,11 +103,15 @@ class UserService {
 
       await sendVerificationEmail(
         email,
-        `${env.BASE_URL}/verify-email?token=${verificationToken}`
+        `${env.BASE_URL}/verify-email?token=${generateVerificationToken}`
       );
+
+
 
       return {
         success: true,
+        id: userId,
+        generateVerificationToken,
         message: "Verification email sent successfully",
       };
     } catch (error) {
@@ -117,9 +123,33 @@ class UserService {
   public async loginUserWithEmailAndPassword(payload: LoginUserWithEmailAndPasswordInputModelType) {
 
   }
-
   public async logoutUser() {
 
+  }
+
+  public async verifyEmail(payload: VerifyEmailInputType) {
+    try {
+      const { token } = await verifyEmailInput.parseAsync(payload)
+
+      const decoded = await jwt.verify(
+        token,
+        env.JWT_SECRET
+      )
+
+      if (typeof decoded !== "object" || decoded === null || !("userId" in decoded)) {
+        throw new Error("Invalid token")
+      }
+
+      await db.update(usersTable).set({ emailVerifiedAt: new Date() }).where(eq(usersTable.id, decoded.userId))
+
+      return {
+        success: true,
+        message: "Email verified successfully",
+      }
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
 
 }

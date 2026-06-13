@@ -45,3 +45,11 @@ export const loginUserWithEmailAndPasswordOutputModel = z.object({
 export type LoginUserWithEmailAndPasswordOutputModelType = z.infer<
   typeof loginUserWithEmailAndPasswordOutputModel
 >
+
+export const verifyEmailInput = z.object({
+  token: z.string().describe("Token of the user")
+})
+
+export type VerifyEmailInputType = z.infer<
+  typeof verifyEmailInput
+>
