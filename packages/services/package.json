@@ -12,9 +12,14 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@corsair-dev/cli": "^0.1.19",
+    "@corsair-dev/github": "^0.1.10",
+    "@corsair-dev/mcp": "^0.1.22",
+    "@openai/agents": "^0.11.6",
     "@repo/database": "workspace:*",
     "@repo/logger": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "corsair": "^0.1.76",
     "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
     "resend": "^6.12.4",

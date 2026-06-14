@@ -1,4 +1,5 @@
 import { db, eq } from "@repo/database";
+
 import { usersTable, emailVerificationsTable } from "@repo/database/schema";
 import { env } from "../env";
 import { googleOAuth2Client } from "../clients/google-oauth";

@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 const envSchema = z.object({
+  DATABASE_URL: z.string().describe("DB URL"),
+  CORSAIR_KEK: z.string().describe("CORSAIR KEK"),
+  GITHUB_TOKEN : z.string().describe("GITHUB TOKEN"),
   GOOGLE_OAUTH_CLIENT_ID: z.string(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
   GOOGLE_OAUTH_REDIRECT_URI: z.string(),

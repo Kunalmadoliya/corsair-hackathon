@@ -16,6 +16,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@corsair-dev/cli": "^0.1.19",
+    "corsair": "^0.1.76",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "pg": "^8.16.3",

@@ -8,7 +8,13 @@ import {
 import { publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import { env } from "@repo/services/env";
-import { verifyEmailOutput, createUserWithEmailAndPasswordInputModel, createUserWithEmailAndPasswordOutputModel, verifyEmailInput, loginUserWithEmailAndPasswordInputModel, loginUserWithEmailAndPasswordOutputModel, logoutOutputModel } from "./model";
+import { verifyEmailOutput, 
+  createUserWithEmailAndPasswordInputModel, 
+  createUserWithEmailAndPasswordOutputModel, 
+  verifyEmailInput, 
+  loginUserWithEmailAndPasswordInputModel, 
+  loginUserWithEmailAndPasswordOutputModel, 
+  logoutOutputModel } from "./model";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
