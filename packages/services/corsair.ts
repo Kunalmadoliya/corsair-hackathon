@@ -7,8 +7,18 @@ import { env } from './env';
 
 export const corsair: ReturnType<typeof createCorsair> = createCorsair({
     plugins: [
-        gmail(),
-        googlecalendar()
+        gmail({
+            authType: "oauth_2",
+            scopes : [
+                
+            ]
+            
+        }),
+        googlecalendar(
+            {
+                authType: "oauth_2"
+            }
+        )
     ],
     database: pool,
     kek: env.CORSAIR_KEK!,
