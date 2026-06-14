@@ -27,11 +27,29 @@ class UserService {
     const isGoogleConfigured = !!(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET);
 
     if (isGoogleConfigured) {
-      const url = googleOAuth2Client.generateAuthUrl();
+      const url = googleOAuth2Client.generateAuthUrl({
+        access_type: "offline",
+        scope: [
+          "https://www.googleapis.com/auth/userinfo.profile",
+          "https://www.googleapis.com/auth/userinfo.email",
+        ],
+      });
       supportedAuthenticationProviders.push({
         provider: "GOOGLE_OAUTH",
         displayName: "Google",
         displayText: "Signin with Google",
+        authUrl: url,
+      });
+    }
+
+    const isGithubConfigured = !!(env.GITHUB_OAUTH_CLIENT_ID && env.GITHUB_OAUTH_CLIENT_SECRET);
+
+    if (isGithubConfigured) {
+      const url = `https://github.com/login/oauth/authorize?client_id=${env.GITHUB_OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(env.GITHUB_OAUTH_REDIRECT_URI || "")}&scope=user:email`;
+      supportedAuthenticationProviders.push({
+        provider: "GITHUB_OAUTH",
+        displayName: "GitHub",
+        displayText: "Signin with GitHub",
         authUrl: url,
       });
     }
@@ -226,6 +244,146 @@ public async verifyEmail(payload: VerifyEmailInputType) {
   }
 }
 
+  public async loginOrRegisterWithOAuth(payload: { code: string; provider: "GOOGLE_OAUTH" | "GITHUB_OAUTH" }) {
+    try {
+      const { code, provider } = payload;
+      let providerId = "";
+      let email = "";
+      let fullname = "";
+      let profileImageUrl = "";
+
+      if (provider === "GOOGLE_OAUTH") {
+        const { tokens } = await googleOAuth2Client.getToken(code);
+        if (!tokens.id_token) {
+          throw new Error("No ID token returned from Google");
+        }
+        const ticket = await googleOAuth2Client.verifyIdToken({
+          idToken: tokens.id_token,
+          audience: env.GOOGLE_OAUTH_CLIENT_ID,
+        });
+        const googlePayload = ticket.getPayload();
+        if (!googlePayload || !googlePayload.email) {
+          throw new Error("Invalid Google token payload");
+        }
+        providerId = googlePayload.sub;
+        email = googlePayload.email;
+        fullname = googlePayload.name || googlePayload.given_name || "";
+        profileImageUrl = googlePayload.picture || "";
+      } else if (provider === "GITHUB_OAUTH") {
+        const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            client_id: env.GITHUB_OAUTH_CLIENT_ID,
+            client_secret: env.GITHUB_OAUTH_CLIENT_SECRET,
+            code,
+            redirect_uri: env.GITHUB_OAUTH_REDIRECT_URI,
+          }),
+        });
+        const tokenData = (await tokenResponse.json()) as { access_token?: string };
+        const accessToken = tokenData.access_token;
+        if (!accessToken) {
+          throw new Error("Failed to retrieve access token from GitHub");
+        }
+
+        const userResponse = await fetch("https://api.github.com/user", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "User-Agent": "trpc-monorepo-app",
+          },
+        });
+        const userData = (await userResponse.json()) as { id: number; name?: string; login: string; email?: string; avatar_url?: string };
+        providerId = String(userData.id);
+        fullname = userData.name || userData.login || "";
+        profileImageUrl = userData.avatar_url || "";
+
+        const emailsResponse = await fetch("https://api.github.com/user/emails", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "User-Agent": "trpc-monorepo-app",
+          },
+        });
+        const emailsData = (await emailsResponse.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
+        const primaryEmailObj = emailsData.find((e) => e.primary && e.verified);
+        email = primaryEmailObj ? primaryEmailObj.email : (userData.email || "");
+        if (!email) {
+          throw new Error("No verified email found for GitHub user");
+        }
+      } else {
+        throw new Error("Unsupported authentication provider");
+      }
+
+      // Check if user already exists with this provider ID
+      let user = null;
+      if (provider === "GOOGLE_OAUTH") {
+        const result = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.googleId, providerId));
+        user = result[0] ?? null;
+      } else {
+        const result = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.githubId, providerId));
+        user = result[0] ?? null;
+      }
+
+      let userId = "";
+
+      if (user) {
+        userId = user.id;
+      } else {
+        // Check if user exists with this email
+        const existingUser = await this.getUserWithEmail(email);
+
+        if (existingUser) {
+          userId = existingUser.id;
+          // Link the provider ID to existing account
+          if (provider === "GOOGLE_OAUTH") {
+            await db
+              .update(usersTable)
+              .set({ googleId: providerId, profileImageUrl: existingUser.profileImageUrl || profileImageUrl })
+              .where(eq(usersTable.id, userId));
+          } else {
+            await db
+              .update(usersTable)
+              .set({ githubId: providerId, profileImageUrl: existingUser.profileImageUrl || profileImageUrl })
+              .where(eq(usersTable.id, userId));
+          }
+        } else {
+          // Register a new user
+          const newUser = await db
+            .insert(usersTable)
+            .values({
+              fullname,
+              email,
+              emailVerifiedAt: new Date(),
+              googleId: provider === "GOOGLE_OAUTH" ? providerId : null,
+              githubId: provider === "GITHUB_OAUTH" ? providerId : null,
+              profileImageUrl,
+            })
+            .returning({
+              id: usersTable.id,
+            });
+          userId = newUser[0]?.id!;
+        }
+      }
+
+      const token = await this.generateJwtToken(userId);
+
+      return {
+        id: userId,
+        token,
+      };
+    } catch (error) {
+      console.error("OAuth login error:", error);
+      throw error;
+    }
+  }
 }
 
 export default UserService;

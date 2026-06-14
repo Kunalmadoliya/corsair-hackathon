@@ -22,3 +22,15 @@ export function useLogout() {
 
     return { logoutUserAsync, logoutUser, error, failureCount, isError, isIdle, isSuccess, isPending, status }
 }
+
+export function useLoginWithOAuth() {
+    const { mutateAsync: loginWithOAuthAsync, mutate: loginWithOAuth, error, isError, isPending, status } = trpc.auth.loginWithOAuth.useMutation()
+
+    return { loginWithOAuthAsync, loginWithOAuth, error, isError, isPending, status }
+}
+
+export function useSupportedProviders() {
+    const { data: providers, isLoading, isError, error } = trpc.auth.getSupportedAuthenticationProviders.useQuery()
+
+    return { providers, isLoading, isError, error }
+}

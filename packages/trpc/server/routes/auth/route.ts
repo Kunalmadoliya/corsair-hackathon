@@ -14,7 +14,9 @@ import { verifyEmailOutput,
   verifyEmailInput, 
   loginUserWithEmailAndPasswordInputModel, 
   loginUserWithEmailAndPasswordOutputModel, 
-  logoutOutputModel } from "./model";
+  logoutOutputModel,
+  loginWithOAuthInputModel,
+  loginWithOAuthOutputModel } from "./model";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
@@ -66,6 +68,28 @@ export const authRouter = router({
 
       const { id, token } = await userService.loginUserWithEmailAndPassword({
         email, password
+      })
+
+      ctx.setCookie("token", token, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "dev" ? false : true,
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/"
+      })
+
+      return { id }
+    }),
+
+  loginWithOAuth: publicProcedure.meta({
+    openapi: { method: "POST", path: getPath("/loginWithOAuth"), tags: TAGS }
+  }).input(loginWithOAuthInputModel)
+    .output(loginWithOAuthOutputModel)
+    .mutation(async ({ input, ctx }) => {
+      const { code, provider } = input
+
+      const { id, token } = await userService.loginOrRegisterWithOAuth({
+        code, provider
       })
 
       ctx.setCookie("token", token, {

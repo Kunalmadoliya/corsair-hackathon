@@ -39,3 +39,14 @@ export const corsairEvents = pgTable('corsair_events', {
     payload: jsonb('payload').notNull().default({}),
     status: text('status'),
 });
+
+// export const corsairPermissions = pgTable('corsair_permissions', {
+//     id: text('id').primaryKey(),
+//     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+//     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+//     token : text('token').notNull(),
+//     plugin  : jsonb('plugin').notNull(), 
+//     args : jsonb('args').notNull(), 
+//     tanant_id : text('tanant_id').notNull(), 
+//     expies
+// });

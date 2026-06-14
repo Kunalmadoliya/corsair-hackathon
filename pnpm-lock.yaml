@@ -376,6 +376,12 @@ importers:
       '@corsair-dev/github':
         specifier: ^0.1.10
         version: 0.1.10(@types/node@22.15.3)(corsair@0.1.76)(zod@4.3.5)
+      '@corsair-dev/gmail':
+        specifier: ^0.1.4
+        version: 0.1.4(@types/node@22.15.3)(corsair@0.1.76)(zod@4.3.5)
+      '@corsair-dev/googlecalendar':
+        specifier: ^0.1.4
+        version: 0.1.4(@types/node@22.15.3)(corsair@0.1.76)(zod@4.3.5)
       '@corsair-dev/mcp':
         specifier: ^0.1.22
         version: 0.1.22(@openai/agents@0.11.6(ws@8.21.0)(zod@4.3.5))(openai@6.42.0(ws@8.21.0)(zod@4.3.5))
@@ -737,6 +743,18 @@ packages:
 
   '@corsair-dev/github@0.1.10':
     resolution: {integrity: sha512-4aYUkgJWWaGz2z7YUoS/HfxRIBogKXoazvHuOFZ9V5/O3w9hp57QsNBKAOiFHNkxwUEgFlW/mzeFcb/y8w1Aug==}
+    peerDependencies:
+      corsair: '>=0.1.0'
+      zod: ^4.1.13
+
+  '@corsair-dev/gmail@0.1.4':
+    resolution: {integrity: sha512-jaAa+NUzJtm0YWDFdcKgR4rm4vvm2ODe6dLXK/FHOxvCdcrrDhHEJ9mZArNcY+K8ieJnL/hXFSX9a2uzsDC5jg==}
+    peerDependencies:
+      corsair: '>=0.1.0'
+      zod: ^4.1.13
+
+  '@corsair-dev/googlecalendar@0.1.4':
+    resolution: {integrity: sha512-UqTjWivu6FhMBbZ6p9ZCb9AkA/ycsYzSGL7WU/Cam82O+OooDCROZBBGpqBbJ7Gs9jSacxGQ+MQAu6B9mp7GEw==}
     peerDependencies:
       corsair: '>=0.1.0'
       zod: ^4.1.13
@@ -6225,6 +6243,30 @@ snapshots:
       - supports-color
 
   '@corsair-dev/github@0.1.10(@types/node@22.15.3)(corsair@0.1.76)(zod@4.3.5)':
+    dependencies:
+      corsair: 0.1.76
+      jest: 29.7.0(@types/node@22.15.3)
+      zod: 4.3.5
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - node-notifier
+      - supports-color
+      - ts-node
+
+  '@corsair-dev/gmail@0.1.4(@types/node@22.15.3)(corsair@0.1.76)(zod@4.3.5)':
+    dependencies:
+      corsair: 0.1.76
+      jest: 29.7.0(@types/node@22.15.3)
+      zod: 4.3.5
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - node-notifier
+      - supports-color
+      - ts-node
+
+  '@corsair-dev/googlecalendar@0.1.4(@types/node@22.15.3)(corsair@0.1.76)(zod@4.3.5)':
     dependencies:
       corsair: 0.1.76
       jest: 29.7.0(@types/node@22.15.3)

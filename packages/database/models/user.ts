@@ -32,6 +32,7 @@ export const usersTable = pgTable("users", {
   passwordHash: varchar("password_hash", { length: 255 }),
 
   googleId: text("google_id").unique(),
+  githubId: text("github_id").unique(),
 
   role: roleEnum("role").default("user").notNull(),
 
