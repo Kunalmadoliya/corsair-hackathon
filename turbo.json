@@ -6,21 +6,7 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": [
-        "DATABASE_URL",
-        "CORSAIR_KEK",
-        "NODE_ENV",
-        "GOOGLE_OAUTH_CLIENT_ID",
-        "GOOGLE_OAUTH_CLIENT_SECRET",
-        "GOOGLE_OAUTH_REDIRECT_URI",
-        "BASE_URL",
-        "WEB_URL",
-        "JWT_SECRET",
-        "RESEND_API_KEY",
-        "EMAIL_FROM",
-        "OPENAI_API_KEY",
-        "NEXT_PUBLIC_API_URL"
-      ]
+      "env": ["*"]
     },
     "lint": {
       "dependsOn": ["^lint"]
