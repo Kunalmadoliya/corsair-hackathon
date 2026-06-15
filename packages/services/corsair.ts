@@ -1,4 +1,4 @@
-import 'dotenv/config';
+
 import { pool } from '@repo/database';
 import { createCorsair } from 'corsair';
 import { gmail } from '@corsair-dev/gmail';
@@ -9,10 +9,6 @@ export const corsair: ReturnType<typeof createCorsair> = createCorsair({
     plugins: [
         gmail({
             authType: "oauth_2",
-            scopes : [
-                
-            ]
-            
         }),
         googlecalendar(
             {
