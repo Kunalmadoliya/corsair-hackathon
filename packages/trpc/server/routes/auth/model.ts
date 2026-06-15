@@ -41,3 +41,9 @@ export const loginWithOAuthInputModel = z.object({
 export const loginWithOAuthOutputModel = z.object({
     id: z.string().describe("Id of the user"),
 })
+
+export const getUserWithTokenInputModel = z.undefined()
+export const getUserWithTokenOutputModel = z.object({
+    id: z.string().describe("Id of the user"),
+    email: z.string().email().describe("Email of the user")
+})

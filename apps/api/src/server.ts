@@ -4,11 +4,12 @@ import cors from "cors";
 
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { generateOpenApiDocument, createOpenApiExpressMiddleware } from "trpc-to-openapi";
-// import { apiReference } from "@scalar/express-api-reference";
+import { apiReference } from "@scalar/express-api-reference";
 
 import { serverRouter, createContext } from "@repo/trpc/server";
 
 import { env } from "./env";
+import cookieParser from "cookie-parser"
 
 export const app = express();
 const openApiDocument = generateOpenApiDocument(serverRouter, {
@@ -18,6 +19,7 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
 });
 
 
+
 app.use(
   cors({
     origin: env.WEB_URL,
@@ -25,7 +27,7 @@ app.use(
   }),
 );
 
-
+app.use(cookieParser())
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -41,8 +43,8 @@ app.get("/openapi.json", (req, res) => {
   return res.json(openApiDocument);
 });
 
-// logger.debug(`docs: ${env.BASE_URL}/docs`);
-// app.use("/docs", apiReference({ url: "/openapi.json" }));
+logger.debug(`docs: ${env.BASE_URL}/docs`);
+app.use("/docs", apiReference({ url: "/openapi.json" }));
 
 app.use(
   "/api",

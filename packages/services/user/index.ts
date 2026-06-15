@@ -10,13 +10,14 @@ import {
   loginUserWithEmailAndPasswordInputModel,
   LoginUserWithEmailAndPasswordInputModelType,
   verifyEmailInput,
-  VerifyEmailInputType
+  VerifyEmailInputType,
+  GenerateUserTokenPayloadType,
 } from "./model";
 
-import { sendVerificationEmail } from "../email/index"
+import { sendVerificationEmail } from "../email/index";
 
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 class UserService {
   public async getAuthenticationMethods(): Promise<
@@ -32,6 +33,10 @@ class UserService {
         scope: [
           "https://www.googleapis.com/auth/userinfo.profile",
           "https://www.googleapis.com/auth/userinfo.email",
+          "https://www.googleapis.com/auth/gmail.readonly",
+          "https://www.googleapis.com/auth/gmail.send",
+          "https://www.googleapis.com/auth/gmail.modify",
+          "https://www.googleapis.com/auth/gmail.compose",
         ],
       });
       supportedAuthenticationProviders.push({
@@ -58,26 +63,19 @@ class UserService {
   }
 
   private async getUserWithEmail(email: string) {
-    const result = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, email));
+    const result = await db.select().from(usersTable).where(eq(usersTable.email, email));
 
     return result[0] ?? null;
   }
 
-  private async generateJwtToken(userId: string) {
-    return jwt.sign(
-      { userId },
-      env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
-    );
+  private async generateJwtToken(id: string) {
+    return jwt.sign({ id }, env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
   }
 
   public async createUserWithEmailAndPassword(
-    payload: CreateUserWithEmailAndPasswordInputModelType
+    payload: CreateUserWithEmailAndPasswordInputModelType,
   ) {
     try {
       const { email, fullname, password } =
@@ -109,20 +107,17 @@ class UserService {
         throw new Error("User creation failed");
       }
 
-      const generateVerificationToken =
-        await this.generateJwtToken(userId);
+      const generateVerificationToken = await this.generateJwtToken(userId) ;
 
       await db.insert(emailVerificationsTable).values({
-        userId,
+      userId,
         token: generateVerificationToken,
-        expiresAt: new Date(
-          Date.now() + 60 * 60 * 1000
-        ),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       });
 
       await sendVerificationEmail(
         email,
-        `${env.WEB_URL}/verify-email?token=${generateVerificationToken}`
+        `${env.WEB_URL}/verify-email?token=${generateVerificationToken}`,
       );
 
       return {
@@ -138,37 +133,37 @@ class UserService {
 
   public async loginUserWithEmailAndPassword(payload: LoginUserWithEmailAndPasswordInputModelType) {
     try {
-      const { email, password } = await loginUserWithEmailAndPasswordInputModel.parseAsync(payload)
+      const { email, password } = await loginUserWithEmailAndPasswordInputModel.parseAsync(payload);
 
-      const existingUser = await this.getUserWithEmail(email)
+      const existingUser = await this.getUserWithEmail(email);
 
       if (!existingUser) {
-        throw new Error("Invalid email or password")
+        throw new Error("Invalid email or password");
       }
 
       if (!existingUser.emailVerifiedAt) {
-        throw new Error("Please verify your email before logging in")
+        throw new Error("Please verify your email before logging in");
       }
 
       if (!existingUser.passwordHash) {
-        throw new Error("This account uses a different login method")
+        throw new Error("This account uses a different login method");
       }
 
-      const isPasswordValid = await bcrypt.compare(password, existingUser.passwordHash)
+      const isPasswordValid = await bcrypt.compare(password, existingUser.passwordHash);
 
       if (!isPasswordValid) {
-        throw new Error("Invalid email or password")
+        throw new Error("Invalid email or password");
       }
 
-      const token = await this.generateJwtToken(existingUser.id)
+      const token = await this.generateJwtToken(existingUser.id);
 
       return {
         id: existingUser.id,
         token,
-      }
+      };
     } catch (error) {
-      console.error(error)
-      throw error
+      console.error(error);
+      throw error;
     }
   }
 
@@ -176,75 +171,109 @@ class UserService {
     return {
       success: true,
       message: "Logged out successfully",
-    }
-  }
-
-public async verifyEmail(payload: VerifyEmailInputType) {
-  try {
-    const { token } = await verifyEmailInput.parseAsync(payload);
-
-    const decoded = jwt.verify(
-      token,
-      env.JWT_SECRET
-    ) as { userId: string };
-
-    const verification = await db
-      .select()
-      .from(emailVerificationsTable)
-      .where(eq(emailVerificationsTable.token, token));
-
-    const verificationRecord = verification[0];
-
-    if (!verificationRecord) {
-      throw new Error("Verification token not found");
-    }
-
-    if (verificationRecord.verifiedAt) {
-      throw new Error("Email already verified");
-    }
-
-    if (verificationRecord.expiresAt < new Date()) {
-      throw new Error("Verification token expired");
-    }
-
-    const user = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, verificationRecord.userId));
-
-    if (!user[0]) {
-      throw new Error("User not found");
-    }
-
-    if (user[0].emailVerifiedAt) {
-      throw new Error("Email already verified");
-    }
-
-    await db
-      .update(usersTable)
-      .set({
-        emailVerifiedAt: new Date(),
-      })
-      .where(eq(usersTable.id, verificationRecord.userId));
-
-    await db
-      .update(emailVerificationsTable)
-      .set({
-        verifiedAt: new Date(),
-      })
-      .where(eq(emailVerificationsTable.id, verificationRecord.id));
-
-    return {
-      success: true,
-      message: "Email verified successfully",
     };
-  } catch (error) {
-    console.error("Verify Email Error:", error);
-    throw error;
   }
-}
 
-  public async loginOrRegisterWithOAuth(payload: { code: string; provider: "GOOGLE_OAUTH" | "GITHUB_OAUTH" }) {
+  public async getUserInfoById(id: string) {
+    try {
+      const user = await db
+        .select({
+          id: usersTable.id,
+          email: usersTable.email,
+        })
+        .from(usersTable)
+        .where(eq(usersTable.id, id));
+
+      if (!user[0] || user.length === 0) {
+        throw new Error("User not found");
+      }
+
+      return {
+        id: user[0].id,
+        email: user[0].email,
+      };
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  public async verifyAndDecodeUserToken(token: string) {
+    try {
+      const result = jwt.verify(token, env.JWT_SECRET) as GenerateUserTokenPayloadType;
+
+      return result;
+    } catch (err) {
+      throw new Error("Invalid token");
+    }
+  }
+
+  public async verifyEmail(payload: VerifyEmailInputType) {
+    try {
+      const { token } = await verifyEmailInput.parseAsync(payload);
+
+      const decoded = jwt.verify(token, env.JWT_SECRET) ;
+
+      const verification = await db
+        .select()
+        .from(emailVerificationsTable)
+        .where(eq(emailVerificationsTable.token, token));
+
+      const verificationRecord = verification[0];
+
+      if (!verificationRecord) {
+        throw new Error("Verification token not found");
+      }
+
+      if (verificationRecord.verifiedAt) {
+        throw new Error("Email already verified");
+      }
+
+      if (verificationRecord.expiresAt < new Date()) {
+        throw new Error("Verification token expired");
+      }
+
+      const user = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, verificationRecord.id));
+
+      if (!user[0]) {
+        throw new Error("User not found");
+      }
+
+      if (user[0].emailVerifiedAt) {
+        throw new Error("Email already verified");
+      }
+
+      await db
+        .update(usersTable)
+        .set({
+          emailVerifiedAt: new Date(),
+        })
+        .where(eq(usersTable.id, verificationRecord.id));
+
+      await db
+        .update(emailVerificationsTable)
+        .set({
+          verifiedAt: new Date(),
+        })
+        .where(eq(emailVerificationsTable.id, verificationRecord.id));
+
+      return {
+        success: true,
+        message: "Email verified successfully",
+      };
+    } catch (error) {
+      console.error("Verify Email Error:", error);
+      throw error;
+    }
+  }
+
+  public async loginOrRegisterWithOAuth(payload: {
+    code: string;
+    provider: "GOOGLE_OAUTH" | "GITHUB_OAUTH";
+  }) {
     try {
       const { code, provider } = payload;
       let providerId = "";
@@ -295,7 +324,13 @@ public async verifyEmail(payload: VerifyEmailInputType) {
             "User-Agent": "trpc-monorepo-app",
           },
         });
-        const userData = (await userResponse.json()) as { id: number; name?: string; login: string; email?: string; avatar_url?: string };
+        const userData = (await userResponse.json()) as {
+          id: number;
+          name?: string;
+          login: string;
+          email?: string;
+          avatar_url?: string;
+        };
         providerId = String(userData.id);
         fullname = userData.name || userData.login || "";
         profileImageUrl = userData.avatar_url || "";
@@ -306,9 +341,13 @@ public async verifyEmail(payload: VerifyEmailInputType) {
             "User-Agent": "trpc-monorepo-app",
           },
         });
-        const emailsData = (await emailsResponse.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
+        const emailsData = (await emailsResponse.json()) as Array<{
+          email: string;
+          primary: boolean;
+          verified: boolean;
+        }>;
         const primaryEmailObj = emailsData.find((e) => e.primary && e.verified);
-        email = primaryEmailObj ? primaryEmailObj.email : (userData.email || "");
+        email = primaryEmailObj ? primaryEmailObj.email : userData.email || "";
         if (!email) {
           throw new Error("No verified email found for GitHub user");
         }
@@ -346,12 +385,18 @@ public async verifyEmail(payload: VerifyEmailInputType) {
           if (provider === "GOOGLE_OAUTH") {
             await db
               .update(usersTable)
-              .set({ googleId: providerId, profileImageUrl: existingUser.profileImageUrl || profileImageUrl })
+              .set({
+                googleId: providerId,
+                profileImageUrl: existingUser.profileImageUrl || profileImageUrl,
+              })
               .where(eq(usersTable.id, userId));
           } else {
             await db
               .update(usersTable)
-              .set({ githubId: providerId, profileImageUrl: existingUser.profileImageUrl || profileImageUrl })
+              .set({
+                githubId: providerId,
+                profileImageUrl: existingUser.profileImageUrl || profileImageUrl,
+              })
               .where(eq(usersTable.id, userId));
           }
         } else {

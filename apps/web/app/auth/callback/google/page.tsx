@@ -14,6 +14,7 @@ function GoogleCallbackContent() {
 
   useEffect(() => {
     if (code) {
+         console.log("Starting OAuth");
       loginWithOAuthAsync({ code, provider: "GOOGLE_OAUTH" })
         .then(() => {
           router.push("/");

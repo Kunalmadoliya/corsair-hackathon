@@ -28,6 +28,12 @@ export type CreateUserWithEmailAndPasswordOutputModelType = z.infer<
   typeof createUserWithEmailAndPasswordOutputModel
 >
 
+export const generateUserTokenPayload = z.object({
+    id: z.string().describe("ID of the user"),
+});
+
+export type GenerateUserTokenPayloadType = z.infer<typeof generateUserTokenPayload>;
+
 
 export const loginUserWithEmailAndPasswordInputModel = z.object({
   email: z.email().describe("Email of the user"),
@@ -36,6 +42,14 @@ export const loginUserWithEmailAndPasswordInputModel = z.object({
 
 export type LoginUserWithEmailAndPasswordInputModelType = z.infer<
   typeof loginUserWithEmailAndPasswordInputModel
+>
+
+export const getUserWithTokenInputModel = z.object({
+  token: z.string().describe("Token of the user")
+})
+
+export type GetUserWithTokenInputModelType = z.infer<
+  typeof getUserWithTokenInputModel
 >
 
 export const loginUserWithEmailAndPasswordOutputModel = z.object({

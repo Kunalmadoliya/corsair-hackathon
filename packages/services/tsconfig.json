@@ -1,6 +1,9 @@
 {
   "extends": ["@repo/typescript-config/node.json"],
+ 
   "compilerOptions": {
-    "disableSizeLimit": true
+    "module": "esnext",
+    "moduleResolution": "bundler"
   }
-}
+}   
+

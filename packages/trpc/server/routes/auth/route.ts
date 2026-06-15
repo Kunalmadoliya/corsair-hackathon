@@ -5,18 +5,24 @@ import {
 
 
 } from "@repo/services/user/model";
-import { publicProcedure, router } from "../../trpc";
+import { publicProcedure, authenticatedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import { env } from "@repo/services/env";
-import { verifyEmailOutput, 
-  createUserWithEmailAndPasswordInputModel, 
-  createUserWithEmailAndPasswordOutputModel, 
-  verifyEmailInput, 
-  loginUserWithEmailAndPasswordInputModel, 
-  loginUserWithEmailAndPasswordOutputModel, 
+import {
+  verifyEmailOutput,
+  createUserWithEmailAndPasswordInputModel,
+  createUserWithEmailAndPasswordOutputModel,
+  verifyEmailInput,
+  loginUserWithEmailAndPasswordInputModel,
+  loginUserWithEmailAndPasswordOutputModel,
   logoutOutputModel,
   loginWithOAuthInputModel,
-  loginWithOAuthOutputModel } from "./model";
+  loginWithOAuthOutputModel,
+  getUserWithTokenInputModel,
+  getUserWithTokenOutputModel
+
+
+} from "./model";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
@@ -35,10 +41,10 @@ export const authRouter = router({
     openapi: { method: "POST", path: getPath("/createUserWithEmailAndPassword"), tags: TAGS }
   }).input(createUserWithEmailAndPasswordInputModel)
     .output(createUserWithEmailAndPasswordOutputModel)
-    .mutation(async ({ input}) => {
+    .mutation(async ({ input }) => {
       const { fullname, email, password } = input
 
-      const { id} = await userService.createUserWithEmailAndPassword({
+      const { id } = await userService.createUserWithEmailAndPassword({
         fullname, email, password
       })
 
@@ -51,7 +57,7 @@ export const authRouter = router({
   })
     .input(verifyEmailInput)
     .output(verifyEmailOutput)
-    .query(async ({ input}) => {
+    .query(async ({ input }) => {
       const { token } = input
 
       const { success, message } = await userService.verifyEmail({ token })
@@ -72,7 +78,7 @@ export const authRouter = router({
 
       ctx.setCookie("token", token, {
         httpOnly: true,
-        secure: env.NODE_ENV === "dev" ? false : true,
+        secure:env.NODE_ENV === "prod",
         sameSite: "strict",
         maxAge: 60 * 60 * 24 * 7,
         path: "/"
@@ -94,7 +100,7 @@ export const authRouter = router({
 
       ctx.setCookie("token", token, {
         httpOnly: true,
-        secure: env.NODE_ENV === "dev" ? false : true,
+        secure: env.NODE_ENV === "prod",
         sameSite: "strict",
         maxAge: 60 * 60 * 24 * 7,
         path: "/"
@@ -103,7 +109,7 @@ export const authRouter = router({
       return { id }
     }),
 
-  logoutUser: publicProcedure.meta({
+  logoutUser: authenticatedProcedure.meta({
     openapi: { method: "POST", path: getPath("/logout"), tags: TAGS }
   }).input(zodUndefinedModel)
     .output(logoutOutputModel)
@@ -113,5 +119,17 @@ export const authRouter = router({
       const { success, message } = await userService.logoutUser()
 
       return { success, message }
-    })
+    }),
+
+  getUserWithToken: authenticatedProcedure.meta({
+    openapi: { method: "GET", path: getPath("/getUserWithToken"), tags: TAGS }
+  })
+    .input(getUserWithTokenInputModel)
+    .output(getUserWithTokenOutputModel)
+    .query(async ({ ctx }) => {
+      const { id, email } = await userService.getUserInfoById(ctx.user.id)
+      return { id, email }
+    }),
+
+
 });

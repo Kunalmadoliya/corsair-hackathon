@@ -6,10 +6,15 @@ import { Logo } from './logo';
 import { Button } from '~/components/ui/button';
 import { pricingPlans } from '~/lib/mock-data';
 import { ArrowRight, Shield, Zap, MessageSquare, Check } from 'lucide-react';
+import { usegetUser } from '~/hooks/api/auth/auth';
+import {useRouter} from "next/navigation"
+
 
 interface LandingPageProps { onEnterDashboard?: () => void; }
 
 export function LandingPage({ onEnterDashboard }: LandingPageProps) {
+  const {user} = usegetUser()
+  const router = useRouter()
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -21,12 +26,25 @@ export function LandingPage({ onEnterDashboard }: LandingPageProps) {
             <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it works</a>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-sm text-muted-foreground" onClick={onEnterDashboard}>Log in</Button>
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={onEnterDashboard}>
+
+          {
+            user ? 
+            <div className="flex items-center gap-3">
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={onEnterDashboard}>
+                Dashboard <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={onEnterDashboard}>
+                Logout <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div> :  <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" className="text-sm text-muted-foreground" onClick={() => router.push('/auth/login')}>
+              Log in</Button>
+            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={() => router.push('/auth/signup')}>
               Get Started <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
+          }
+         
         </div>
       </nav>
 
