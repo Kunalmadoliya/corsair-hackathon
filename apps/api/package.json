@@ -8,6 +8,7 @@
     "build": "tsup",
     "lint": "eslint src/*"
   },
+  "type": "module",
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
