@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useHealth } from "~/hooks/api/health";
+import { useState } from 'react';
+import { LandingPage } from '~/components/spamurai/landing-page';
+import { Dashboard } from '~/components/spamurai/dashboard';
 
 export default function Home() {
-  const { data, status, isFetched, isError } = useHealth();
-  return (
-    <main className="min-h-screen min-w-screen flex justify-center items-center">
-      <div>
-        <h1 className="text-3xl">Streamyst - Stream in Style</h1>
-        <h2>Server Status: {data?.status}</h2>
-      </div>
-    </main>
-  );
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  if (showDashboard) {
+    return <Dashboard onBack={() => setShowDashboard(false)} />;
+  }
+
+  return <LandingPage onEnterDashboard={() => setShowDashboard(true)} />;
 }
