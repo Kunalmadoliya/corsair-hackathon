@@ -32,11 +32,7 @@ class UserService {
         access_type: "offline",
         scope: [
           "https://www.googleapis.com/auth/userinfo.profile",
-          "https://www.googleapis.com/auth/userinfo.email",
-          "https://www.googleapis.com/auth/gmail.readonly",
-          "https://www.googleapis.com/auth/gmail.send",
-          "https://www.googleapis.com/auth/gmail.modify",
-          "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/userinfo.email"
         ],
       });
       supportedAuthenticationProviders.push({
@@ -107,10 +103,10 @@ class UserService {
         throw new Error("User creation failed");
       }
 
-      const generateVerificationToken = await this.generateJwtToken(userId) ;
+      const generateVerificationToken = await this.generateJwtToken(userId);
 
       await db.insert(emailVerificationsTable).values({
-      userId,
+        userId,
         token: generateVerificationToken,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       });
@@ -212,7 +208,7 @@ class UserService {
     try {
       const { token } = await verifyEmailInput.parseAsync(payload);
 
-      const decoded = jwt.verify(token, env.JWT_SECRET) ;
+      const decoded = jwt.verify(token, env.JWT_SECRET);
 
       const verification = await db
         .select()

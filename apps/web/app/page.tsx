@@ -7,11 +7,15 @@ import { usegetUser } from '~/hooks/api/auth/auth';
 
 export default function Home() {
   const [showDashboard, setShowDashboard] = useState(false);
-  const { user} = usegetUser();
+  const { user, isLoading} = usegetUser();
 
 
   
 
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+  
   if (showDashboard) {
     return <Dashboard onBack={() => setShowDashboard(false)} />;
   }
