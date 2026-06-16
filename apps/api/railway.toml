@@ -1,6 +1,7 @@
 [build]
-installCommand = "pnpm install"
-buildCommand = "pnpm install --frozen-lockfile && pnpm build"
+installCommand = "pnpm install --frozen-lockfile"
+buildCommand = "pnpm --filter @repo/api build"
+watchPatterns = ["apps/api/**", "packages/**"]
 
 [deploy]
-startCommand = "pnpm start"
+startCommand = "node apps/api/dist/index.js"
