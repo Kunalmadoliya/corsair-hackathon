@@ -42,9 +42,8 @@ export default function SignupPage() {
         password,
       });
 
-      // Redirect to a page that tells the user
-      // to check their email inbox.
-      router.push("/check-email");
+      // Redirect to onboarding
+      router.push("/onboarding");
     } catch {
       // Error handled by hook state
     }

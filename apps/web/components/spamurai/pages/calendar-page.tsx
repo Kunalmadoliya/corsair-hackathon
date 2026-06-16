@@ -108,54 +108,10 @@ export function CalendarPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scroll">
-          <div className="min-w-[640px]">
-            <div className="flex border-b border-border/25 sticky top-0 bg-background z-10">
-              <div className="w-16 flex-shrink-0" />
-              {weekDays.map((day) => (
-                <div
-                  key={day}
-                  className="flex-1 py-2.5 text-center text-sm font-medium text-muted-foreground"
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {calendarHours.map((hour) => (
-              <div key={hour} className="flex border-b border-border/8 min-h-[48px]">
-                <div className="w-16 flex-shrink-0 py-1.5 pr-3 text-right text-xs text-muted-foreground/50">
-                  {hour}
-                </div>
-                {weekDays.map((day) => {
-                  const slotEvents = getEventForSlot(day, hour.split(" ")[0] as string);
-                  return (
-                    <div
-                      key={`${day}-${hour}`}
-                      className="flex-1 py-0.5 px-0.5 border-l border-border/8"
-                    >
-                      {slotEvents.map((ev) => (
-                        <button
-                          key={ev.id}
-                          onClick={() => handleEventClick(ev.id)}
-                          className={cn(
-                            "w-full text-left px-2 py-1 rounded text-xs leading-tight transition-all hover:scale-[1.02]",
-                            ev.color === "primary"
-                              ? "bg-primary/12 border border-primary/20 text-primary"
-                              : "bg-secondary/50 border border-border/30 text-foreground/70",
-                            selectedEvent === ev.id && "ring-1 ring-primary/50 scale-[1.02]",
-                          )}
-                        >
-                          <div className="font-medium truncate">{ev.title}</div>
-                          <div className="text-[10px] opacity-70">
-                            {ev.time} - {ev.endTime}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground pt-20">
+            <Clock className="w-8 h-8 mb-3 opacity-20" />
+            <p className="text-sm">No calendar events found</p>
+            <p className="text-xs opacity-70 mt-1">Connect your Google Calendar in the Integrations tab to see your schedule.</p>
           </div>
         </div>
       </div>

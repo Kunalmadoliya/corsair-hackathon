@@ -29,15 +29,21 @@ export function AnalyticsPage() {
         <div className="rounded-xl border border-border/40 bg-card p-5 mb-6">
           <div className="text-sm font-semibold mb-4">Daily Activity</div>
           <div className="flex items-end gap-3 h-36">
-            {analytics.dailyBreakdown.map(day => (
-              <div key={day.day} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col gap-px" style={{ height: '90px' }}>
-                  <div className="w-full rounded-sm bg-primary/30 hover:bg-primary/50 transition-colors" style={{ height: `${(day.emails / 65) * 100}%` }} />
-                  <div className="w-full rounded-sm bg-foreground/10 hover:bg-foreground/20 transition-colors" style={{ height: `${(day.actions / 25) * 100}%` }} />
-                </div>
-                <span className="text-xs text-muted-foreground">{day.day}</span>
+            {analytics.dailyBreakdown.length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                Awaiting data
               </div>
-            ))}
+            ) : (
+              analytics.dailyBreakdown.map(day => (
+                <div key={day.day} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full flex flex-col gap-px" style={{ height: '90px' }}>
+                    <div className="w-full rounded-sm bg-primary/30 hover:bg-primary/50 transition-colors" style={{ height: `${(day.emails / 65) * 100}%` }} />
+                    <div className="w-full rounded-sm bg-foreground/10 hover:bg-foreground/20 transition-colors" style={{ height: `${(day.actions / 25) * 100}%` }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{day.day}</span>
+                </div>
+              ))
+            )}
           </div>
           <div className="flex items-center gap-5 mt-4">
             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-primary/30" /><span className="text-xs text-muted-foreground">Emails</span></div>
@@ -57,14 +63,22 @@ export function AnalyticsPage() {
               </tr>
             </thead>
             <tbody>
-              {analytics.dailyBreakdown.map(day => (
-                <tr key={day.day} className="border-b border-border/8 text-sm hover:bg-secondary/20 transition-colors">
-                  <td className="px-5 py-2.5 text-foreground/80">{day.day}</td>
-                  <td className="px-5 py-2.5 text-right text-foreground/60">{day.emails}</td>
-                  <td className="px-5 py-2.5 text-right text-foreground/60">{day.actions}</td>
-                  <td className="px-5 py-2.5 text-right text-primary font-medium">{Math.round((day.actions / day.emails) * 100)}%</td>
+              {analytics.dailyBreakdown.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-5 py-8 text-center text-muted-foreground text-sm">
+                    No data available yet. Connect your integrations to start gathering analytics.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                analytics.dailyBreakdown.map(day => (
+                  <tr key={day.day} className="border-b border-border/8 text-sm hover:bg-secondary/20 transition-colors">
+                    <td className="px-5 py-2.5 text-foreground/80">{day.day}</td>
+                    <td className="px-5 py-2.5 text-right text-foreground/60">{day.emails}</td>
+                    <td className="px-5 py-2.5 text-right text-foreground/60">{day.actions}</td>
+                    <td className="px-5 py-2.5 text-right text-primary font-medium">{Math.round((day.actions / day.emails) * 100)}%</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

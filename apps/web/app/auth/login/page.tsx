@@ -24,7 +24,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await loginUserEmailAndPasswordAsync({ email, password });
-      router.push("/");
+      router.push("/onboarding");
     } catch {
       // error state is handled by the hook
     }

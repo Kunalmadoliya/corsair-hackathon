@@ -8,17 +8,15 @@ import { Button } from '~/components/ui/button';
 import { useToast } from '~/hooks/use-toast';
 
 export function InboxPage() {
-    if(!emails){
-        throw new Error("Not a valid mail")
-    }
   const { toast } = useToast();
-  const [selectedEmail, setSelectedEmail] = useState<string | null>(emails[0]!.id);
+  // Using an empty state for now until backend integration is ready
+  const [emailList, setEmailList] = useState<any[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
-  const [emailList, setEmailList] = useState(emails);
   const [starredIds, setStarredIds] = useState<string[]>([]);
-  const [readIds, setReadIds] = useState<string[]>(emails.filter(e => !e.unread).map(e => e.id));
+  const [readIds, setReadIds] = useState<string[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
 
   const visibleEmails = emailList.filter(e => !archivedIds.includes(e.id));
@@ -89,37 +87,45 @@ export function InboxPage() {
           <button className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors"><Filter className="w-4 h-4 text-muted-foreground" /></button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scroll">
-          {filtered.map(email => {
-            const isRead = readIds.includes(email.id);
-            const isStarred = starredIds.includes(email.id);
-            return (
-              <div key={email.id} onClick={() => handleSelect(email.id)}
-                className={cn('p-3.5 border-b border-border/15 cursor-pointer transition-all hover:bg-secondary/20', selectedEmail === email.id && 'bg-primary/5 border-l-2 border-l-primary')}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn('text-sm font-medium truncate', !isRead && 'text-foreground', isRead && 'text-foreground/60')}>{email.from}</span>
-                      {email.urgent && <AlertTriangle className="w-3 h-3 text-primary flex-shrink-0" />}
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
+              <Mail className="w-8 h-8 mb-3 opacity-20" />
+              <p className="text-sm">No emails found</p>
+              <p className="text-xs opacity-70 mt-1">Connect your Gmail in the Integrations tab to see your emails here.</p>
+            </div>
+          ) : (
+            filtered.map(email => {
+              const isRead = readIds.includes(email.id);
+              const isStarred = starredIds.includes(email.id);
+              return (
+                <div key={email.id} onClick={() => handleSelect(email.id)}
+                  className={cn('p-3.5 border-b border-border/15 cursor-pointer transition-all hover:bg-secondary/20', selectedEmail === email.id && 'bg-primary/5 border-l-2 border-l-primary')}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn('text-sm font-medium truncate', !isRead && 'text-foreground', isRead && 'text-foreground/60')}>{email.from}</span>
+                        {email.urgent && <AlertTriangle className="w-3 h-3 text-primary flex-shrink-0" />}
+                      </div>
+                      <p className={cn('text-sm mt-0.5 truncate', !isRead && 'text-foreground/85 font-medium', isRead && 'text-foreground/50')}>{email.subject}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{email.preview}</p>
                     </div>
-                    <p className={cn('text-sm mt-0.5 truncate', !isRead && 'text-foreground/85 font-medium', isRead && 'text-foreground/50')}>{email.subject}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{email.preview}</p>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">{email.time}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">{email.time}</span>
+                  <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ opacity: selectedEmail === email.id ? 1 : undefined }}>
+                    <button onClick={(e) => handleStar(email.id, e)} className="w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center transition-all hover:scale-110">
+                      <Star className={cn('w-3.5 h-3.5 transition-colors', isStarred ? 'text-primary fill-primary' : 'text-muted-foreground')} />
+                    </button>
+                    <button onClick={(e) => handleArchive(email.id, e)} className="w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center transition-all hover:scale-110">
+                      <Archive className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                    <button onClick={(e) => handleDelete(email.id, e)} className="w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center transition-all hover:scale-110">
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ opacity: selectedEmail === email.id ? 1 : undefined }}>
-                  <button onClick={(e) => handleStar(email.id, e)} className="w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center transition-all hover:scale-110">
-                    <Star className={cn('w-3.5 h-3.5 transition-colors', isStarred ? 'text-primary fill-primary' : 'text-muted-foreground')} />
-                  </button>
-                  <button onClick={(e) => handleArchive(email.id, e)} className="w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center transition-all hover:scale-110">
-                    <Archive className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
-                  <button onClick={(e) => handleDelete(email.id, e)} className="w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center transition-all hover:scale-110">
-                    <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 

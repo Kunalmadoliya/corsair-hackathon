@@ -1,13 +1,11 @@
 import { db, eq } from "@repo/database";
 
-import { env } from "../env";
-import { generateOAuthUrl } from "corsair/oauth";
-import { corsair } from "../corsair";
+import { env } from "../../env";
+import { generateOAuthUrl, processOAuthCallback } from "corsair/oauth";
+import { corsair } from "../../corsair";
 
 import { corsairAccounts, corsairEntities, corsairEvents, corsairIntegrations } from "@repo/database/schema";
 
-import { GetAuthenticationMethodOutputSchemaType } from "./model"
-import { googleOAuth2Client } from "../clients/google-oauth";
 import { setupCorsair } from 'corsair';
 
 
@@ -40,6 +38,11 @@ class CorsairGmailServices {
             throw new Error("User already connected with Corsair")
         }
 
+        await setupCorsair(corsair, {
+            tenantId: id,
+        });
+
+
         const { url } = await generateOAuthUrl(
             corsair,
             "gmail",
@@ -53,9 +56,26 @@ class CorsairGmailServices {
     }
 
 
-    public async gmailCallback(){}
+    public async gmailCallback(code: string, state: string) {
+        const result = await processOAuthCallback(corsair, { code, state, redirectUri: env.BASE_URL + '/api/corsair/callback' })
 
+        if (!result) {
+            throw new Error("")
+        }
 
+        return result
+    }
+
+    public async readGmail(tenantId: string) {
+        const tenant = corsair.withTenant(tenantId)
+
+        const readInboxes = tenant.gmail.api.messages.list({
+            maxResults: 10,
+            includeSpamTrash: false
+        })
+
+        return { readInboxes }
+    }
 
 
 }

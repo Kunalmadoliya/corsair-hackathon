@@ -15,7 +15,7 @@ const envSchema = z.object({
   EMAIL_FROM: z.string(),
   BASE_URL: z.string() , 
   WEB_URL :z.string() ,
-  NODE_ENV : z.string()
+  NODE_ENV : z.string().default("development")
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

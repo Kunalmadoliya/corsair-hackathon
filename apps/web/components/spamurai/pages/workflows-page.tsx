@@ -60,46 +60,54 @@ export function WorkflowsPage() {
         </div>
 
         <div className="space-y-3">
-          {workflowList.map(wf => (
-            <div key={wf.id} className="rounded-xl border border-border/40 bg-card p-5 card-hover">
-              {editingId === wf.id ? (
-                <div className="space-y-3">
-                  <div><label className="text-xs text-muted-foreground block mb-1">Name</label><input value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
-                  <div><label className="text-xs text-muted-foreground block mb-1">Trigger</label><input value={editTrigger} onChange={e => setEditTrigger(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
-                  <div><label className="text-xs text-muted-foreground block mb-1">Action</label><input value={editAction} onChange={e => setEditAction(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={handleSave}>Save</Button>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <GitBranch className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-semibold">{wf.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={cn('text-xs px-2.5 py-1 rounded-full font-medium', wf.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-foreground/5 text-muted-foreground')}>{wf.status}</span>
-                      <button onClick={() => handleToggle(wf.id)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-all hover:scale-110" title={wf.status === 'active' ? 'Pause' : 'Resume'}>
-                        {wf.status === 'active' ? <Pause className="w-4 h-4 text-muted-foreground" /> : <Play className="w-4 h-4 text-primary" />}
-                      </button>
-                      <button onClick={() => handleEdit(wf.id)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-all hover:scale-110"><Edit3 className="w-4 h-4 text-muted-foreground" /></button>
-                      <button onClick={() => handleDelete(wf.id)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-all hover:scale-110"><Trash2 className="w-4 h-4 text-muted-foreground" /></button>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center gap-3 text-sm">
-                    <span className="px-3 py-1 rounded-md bg-primary/8 text-primary border border-primary/15 font-medium">Trigger</span>
-                    <span className="text-foreground/50">{wf.trigger}</span>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                    <span className="px-3 py-1 rounded-md bg-foreground/4 text-foreground/60 border border-border/25">Action</span>
-                    <span className="text-foreground/50">{wf.action}</span>
-                  </div>
-                  <div className="mt-2.5 text-sm text-muted-foreground">{wf.runs} runs executed</div>
-                </>
-              )}
+          {workflowList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center p-12 text-muted-foreground border border-dashed border-border/40 rounded-xl bg-card/10">
+              <GitBranch className="w-8 h-8 mb-3 opacity-20" />
+              <p className="text-sm font-medium">No workflows found</p>
+              <p className="text-xs opacity-70 mt-1">Create your first workflow to automate your tasks.</p>
             </div>
-          ))}
+          ) : (
+            workflowList.map(wf => (
+              <div key={wf.id} className="rounded-xl border border-border/40 bg-card p-5 card-hover">
+                {editingId === wf.id ? (
+                  <div className="space-y-3">
+                    <div><label className="text-xs text-muted-foreground block mb-1">Name</label><input value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
+                    <div><label className="text-xs text-muted-foreground block mb-1">Trigger</label><input value={editTrigger} onChange={e => setEditTrigger(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
+                    <div><label className="text-xs text-muted-foreground block mb-1">Action</label><input value={editAction} onChange={e => setEditAction(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={handleSave}>Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <GitBranch className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">{wf.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={cn('text-xs px-2.5 py-1 rounded-full font-medium', wf.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-foreground/5 text-muted-foreground')}>{wf.status}</span>
+                        <button onClick={() => handleToggle(wf.id)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-all hover:scale-110" title={wf.status === 'active' ? 'Pause' : 'Resume'}>
+                          {wf.status === 'active' ? <Pause className="w-4 h-4 text-muted-foreground" /> : <Play className="w-4 h-4 text-primary" />}
+                        </button>
+                        <button onClick={() => handleEdit(wf.id)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-all hover:scale-110"><Edit3 className="w-4 h-4 text-muted-foreground" /></button>
+                        <button onClick={() => handleDelete(wf.id)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-all hover:scale-110"><Trash2 className="w-4 h-4 text-muted-foreground" /></button>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 text-sm">
+                      <span className="px-3 py-1 rounded-md bg-primary/8 text-primary border border-primary/15 font-medium">Trigger</span>
+                      <span className="text-foreground/50">{wf.trigger}</span>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                      <span className="px-3 py-1 rounded-md bg-foreground/4 text-foreground/60 border border-border/25">Action</span>
+                      <span className="text-foreground/50">{wf.action}</span>
+                    </div>
+                    <div className="mt-2.5 text-sm text-muted-foreground">{wf.runs} runs executed</div>
+                  </>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

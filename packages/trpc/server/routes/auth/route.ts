@@ -111,7 +111,7 @@ export const authRouter = router({
 
   logoutUser: authenticatedProcedure.meta({
     openapi: { method: "POST", path: getPath("/logout"), tags: TAGS }
-  }).input(zodUndefinedModel)
+  }).input(z.object({}).optional())
     .output(logoutOutputModel)
     .mutation(async ({ ctx }) => {
       ctx.clearCookie("token")

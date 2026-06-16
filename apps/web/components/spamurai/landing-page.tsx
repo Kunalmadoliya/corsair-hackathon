@@ -6,15 +6,19 @@ import { Logo } from './logo';
 import { Button } from '~/components/ui/button';
 import { pricingPlans } from '~/lib/mock-data';
 import { ArrowRight, Shield, Zap, MessageSquare, Check } from 'lucide-react';
-import { usegetUser } from '~/hooks/api/auth/auth';
+import { useLogout, usegetUser } from '~/hooks/api/auth/auth';
 import {useRouter} from "next/navigation"
 
 
-interface LandingPageProps { onEnterDashboard?: () => void; }
 
-export function LandingPage({ onEnterDashboard }: LandingPageProps) {
+
+export function LandingPage() {
   const {user} = usegetUser()
   const router = useRouter()
+  const {logoutUserAsync , logoutUser} = useLogout()
+
+
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -30,11 +34,21 @@ export function LandingPage({ onEnterDashboard }: LandingPageProps) {
           {
             user ? 
             <div className="flex items-center gap-3">
-              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={onEnterDashboard}>
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={() => router.push('/dashboard')}>
                 Dashboard <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
-              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={onEnterDashboard}>
-                Logout <ArrowRight className="w-4 h-4 ml-1" />
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={async () => {
+                try {
+                  await logoutUserAsync(); 
+                } catch (e) {
+                  // Ignore errors, force clear local state
+                }
+                router.push('/');
+                // In auth.ts, onSuccess refreshes page, but if it fails we might still need to force reload or let user be un-auth'd. 
+                // Let's do a hard reload to be safe if logout fails but they clicked it.
+                window.location.href = '/';
+              }}>
+                Logout
               </Button>
             </div> :  <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" className="text-sm text-muted-foreground" onClick={() => router.push('/auth/login')}>
@@ -65,7 +79,7 @@ export function LandingPage({ onEnterDashboard }: LandingPageProps) {
           </p>
 
           <div className="mt-10 flex items-center justify-center gap-3 animate-fade-in">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover px-8" onClick={onEnterDashboard}>
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover px-8" onClick={() => router.push('/auth/signup')}>
               Start for Free <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
             <Button size="lg" variant="outline" className="border-border/50 hover:bg-secondary">
@@ -99,8 +113,8 @@ export function LandingPage({ onEnterDashboard }: LandingPageProps) {
           </div>
           <div className="grid md:grid-cols-3 gap-10">
             {[
-              { step: '01', icon: MessageSquare, title: 'Tell Spamurai what you need', desc: 'Type a natural language command. No menus, no clicks, no learning curve.' },
-              { step: '02', icon: Zap, title: 'It handles the work', desc: 'Spamurai drafts emails, schedules meetings, finds information, and executes workflows.' },
+              { step: '01', icon: MessageSquare, title: 'Tell Corsair what you need', desc: 'Type a natural language command. No menus, no clicks, no learning curve.' },
+              { step: '02', icon: Zap, title: 'It handles the work', desc: 'Corsair drafts emails, schedules meetings, finds information, and executes workflows.' },
               { step: '03', icon: Shield, title: 'Confirm and done', desc: 'Review the action, make adjustments if needed, and confirm. Everything else is automated.' },
             ].map(item => {
               const Icon = item.icon;
@@ -138,7 +152,7 @@ export function LandingPage({ onEnterDashboard }: LandingPageProps) {
                     <li key={f} className="flex items-start gap-2 text-sm text-foreground/80"><Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />{f}</li>
                   ))}
                 </ul>
-                <Button className={`w-full btn-hover ${plan.highlighted ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`} onClick={onEnterDashboard}>{plan.cta}</Button>
+                <Button className={`w-full btn-hover ${plan.highlighted ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`} onClick={() => router.push('/auth/signup')}>{plan.cta}</Button>
               </div>
             ))}
           </div>
@@ -150,7 +164,7 @@ export function LandingPage({ onEnterDashboard }: LandingPageProps) {
         <div className="max-w-2xl mx-auto text-center relative z-10">
           <h2 className="text-3xl font-bold">Ready to let AI handle <span className="text-gradient">your communications?</span></h2>
           <p className="mt-3 text-base text-muted-foreground">Join thousands who reclaimed their time.</p>
-          <Button size="lg" className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90 btn-hover px-8" onClick={onEnterDashboard}>
+          <Button size="lg" className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90 btn-hover px-8" onClick={() => router.push('/auth/signup')}>
             Start for Free <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
           <p className="mt-3 text-sm text-muted-foreground">No credit card required</p>

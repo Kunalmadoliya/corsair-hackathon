@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLoginWithOAuth } from "~/hooks/api/auth/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -10,14 +10,17 @@ function GoogleCallbackContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
   const errorParam = searchParams.get("error");
-  const { loginWithOAuthAsync, isPending, isError, error } = useLoginWithOAuth();
+  const { loginWithOAuthAsync, isError, error } = useLoginWithOAuth();
+
+  const hasCalled = useRef(false);
 
   useEffect(() => {
-    if (code) {
-         console.log("Starting OAuth");
+    if (code && !hasCalled.current) {
+      hasCalled.current = true;
+      console.log("Starting OAuth");
       loginWithOAuthAsync({ code, provider: "GOOGLE_OAUTH" })
         .then(() => {
-          router.push("/");
+          router.push("/onboarding");
         })
         .catch((err) => {
           console.error("Google OAuth login failed:", err);

@@ -23,20 +23,28 @@ export function SettingsPage() {
   const [notifications, setNotifications] = useState({ email: true, slack: true, desktop: false });
   const [isLightTheme, setIsLightTheme] = useState(false);
 
-  // Apply theme class to html element
+  // Apply theme class to html element, but initialize from current DOM state
   useEffect(() => {
+    if (typeof document !== 'undefined') {
+      setIsLightTheme(document.documentElement.classList.contains('light'));
+    }
+  }, []);
+
+  const handleThemeToggle = () => {
+    const nextTheme = !isLightTheme;
+    setIsLightTheme(nextTheme);
     const html = document.documentElement;
-    if (isLightTheme) {
+    if (nextTheme) {
       html.classList.remove('dark');
       html.classList.add('light');
     } else {
       html.classList.remove('light');
       html.classList.add('dark');
     }
-  }, [isLightTheme]);
+    toast({ description: `Switched to ${nextTheme ? 'light' : 'dark'} theme` });
+  };
 
   const handleSave = () => { toast({ description: 'Settings saved' }); };
-  const handleThemeToggle = () => { setIsLightTheme(prev => !prev); toast({ description: `Switched to ${isLightTheme ? 'dark' : 'light'} theme` }); };
 
   return (
     <div className="flex-1 overflow-y-auto custom-scroll p-6">

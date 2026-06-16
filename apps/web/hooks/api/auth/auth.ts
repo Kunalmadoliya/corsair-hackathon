@@ -3,7 +3,7 @@ import { trpc } from "~/trpc/client"
 export function useSignup() {
     const utils = trpc.useUtils()
     const { mutateAsync: createUserEmailAndPasswordAsync, mutate: createUserEmailAndPassword, error, failureCount, isError, isIdle, isSuccess, isPending, status } = trpc.auth.createUserEmailAndPassword.useMutation({
-        onSuccess : () => {
+        onSuccess: () => {
             utils.auth.getUserWithToken.invalidate()
         }
     })
@@ -11,16 +11,16 @@ export function useSignup() {
     return { createUserEmailAndPasswordAsync, createUserEmailAndPassword, error, failureCount, isError, isIdle, isSuccess, isPending, status }
 }
 
-export function useVerifyEmail(token : string) {
-    const utils = trpc.useUtils()
-    const { data: verifyEmailData, isLoading: isVerifyEmailLoading, isError: isVerifyEmailError, error: verifyEmailError, isSuccess: isVerifyEmailSuccess, status: verifyEmailStatus } = trpc.auth.verifyEmail.useQuery({ token } , {enabled: !!token,})
+export function useVerifyEmail(token: string) {
+
+    const { data: verifyEmailData, isLoading: isVerifyEmailLoading, isError: isVerifyEmailError, error: verifyEmailError, isSuccess: isVerifyEmailSuccess, status: verifyEmailStatus } = trpc.auth.verifyEmail.useQuery({ token }, { enabled: !!token, })
     return { verifyEmailData, isVerifyEmailLoading, isVerifyEmailError, verifyEmailError, isVerifyEmailSuccess, verifyEmailStatus }
 }
 
 export function useLogin() {
     const utils = trpc.useUtils()
     const { mutateAsync: loginUserEmailAndPasswordAsync, mutate: loginUserEmailAndPassword, error, failureCount, isError, isIdle, isSuccess, isPending, status } = trpc.auth.loginUserEmailAndPassword.useMutation({
-        onSuccess : ( ) => {
+        onSuccess: () => {
             utils.auth.getUserWithToken.invalidate()
         }
     })
@@ -31,8 +31,9 @@ export function useLogin() {
 export function useLogout() {
     const utils = trpc.useUtils()
     const { mutateAsync: logoutUserAsync, mutate: logoutUser, error, failureCount, isError, isIdle, isSuccess, isPending, status } = trpc.auth.logoutUser.useMutation({
-        onSuccess : () => {
+        onSuccess: () => {
             utils.auth.getUserWithToken.invalidate()
+            window.location.href = '/';
         }
     })
 
@@ -51,8 +52,10 @@ export function useSupportedProviders() {
     return { providers, isLoading, isError, error }
 }
 
-export function usegetUser(){
- const { data: user, isLoading, isError, error } = trpc.auth.getUserWithToken.useQuery()
+export function usegetUser() {
+    const { data: user, isLoading, isError, error } = trpc.auth.getUserWithToken.useQuery(undefined, {
+        retry: false
+    })
 
     return { user, isLoading, isError, error }
 }

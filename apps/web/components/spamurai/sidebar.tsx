@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { cn } from '~/lib/utils';
 import { Logo } from './logo';
 
-export type PageId = 'dashboard' | 'inbox' | 'calendar' | 'workflows' | 'analytics' | 'settings';
+export type PageId = 'dashboard' | 'inbox' | 'calendar' | 'workflows' | 'analytics' | 'settings' | 'integrations';
 
 const navItems: { icon: React.ElementType; label: string; id: PageId; badge?: string }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
@@ -16,6 +16,7 @@ const navItems: { icon: React.ElementType; label: string; id: PageId; badge?: st
   { icon: Calendar, label: 'Calendar', id: 'calendar' },
   { icon: GitBranch, label: 'Workflows', id: 'workflows' },
   { icon: BarChart3, label: 'Analytics', id: 'analytics' },
+  { icon: Settings, label: 'Integrations', id: 'integrations' },
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 

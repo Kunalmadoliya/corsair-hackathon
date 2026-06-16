@@ -12,8 +12,8 @@ export function DemoConversation() {
 
   const current = demoPrompts[activeIdx];
 
-  if(!current){
-     throw new Error("Current needed")
+  if (!current) {
+    return null;
   }
 
   const runDemo = useCallback(() => {

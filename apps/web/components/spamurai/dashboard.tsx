@@ -9,20 +9,36 @@ import { CalendarPage } from './pages/calendar-page';
 import { WorkflowsPage } from './pages/workflows-page';
 import { AnalyticsPage } from './pages/analytics-page';
 import { SettingsPage } from './pages/settings-page';
+import { IntegrationsPage } from './pages/integrations-page';
 import { Logo } from './logo';
 import { Command, Bell, ArrowLeft } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { Toaster } from '~/components/ui/toaster';
+import { usegetUser } from '~/hooks/api/auth/auth';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 interface DashboardProps { onBack?: () => void; }
 
 export function Dashboard({ onBack }: DashboardProps) {
+
+  const { user, isLoading } = usegetUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user) return null;
+  
   const [activePage, setActivePage] = useState<PageId>('dashboard');
   const [commandBarOpen, setCommandBarOpen] = useState(false);
 
   const handleCommand = (command: string) => {
     const key = command.replace('/', '') as PageId;
-    const valid: PageId[] = ['dashboard', 'inbox', 'calendar', 'workflows', 'analytics', 'settings'];
+    const valid: PageId[] = ['dashboard', 'inbox', 'calendar', 'workflows', 'analytics', 'settings', 'integrations'];
     if (valid.includes(key)) setActivePage(key);
   };
 
@@ -65,6 +81,7 @@ export function Dashboard({ onBack }: DashboardProps) {
           {activePage === 'workflows' && <WorkflowsPage />}
           {activePage === 'analytics' && <AnalyticsPage />}
           {activePage === 'settings' && <SettingsPage />}
+          {activePage === 'integrations' && <IntegrationsPage />}
         </div>
       </div>
 
