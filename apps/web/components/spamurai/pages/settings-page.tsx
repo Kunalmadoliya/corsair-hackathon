@@ -91,8 +91,7 @@ export function SettingsPage() {
                 <h3 className="text-base font-semibold">Notification Preferences</h3>
                 {[
                   { key: 'email' as const, label: 'Email notifications', desc: 'Receive updates via email' },
-                  { key: 'slack' as const, label: 'Slack notifications', desc: 'Receive updates in Slack' },
-                  { key: 'desktop' as const, label: 'Desktop notifications', desc: 'Browser push notifications' },
+                  
                 ].map(item => (
                   <div key={item.key} className="flex items-center justify-between py-1">
                     <div><div className="text-sm text-foreground/80">{item.label}</div><div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div></div>
@@ -142,13 +141,13 @@ export function SettingsPage() {
             {activeTab === 'integrations' && (
               <div className="rounded-xl border border-border/40 bg-card p-6 space-y-4">
                 <h3 className="text-base font-semibold">Connected Services</h3>
-                {['Gmail', 'Slack', 'Google Calendar', 'Zoom', 'Notion', 'Jira'].map(name => {
+                {['Gmail',  'Google Calendar',].map(name => {
                   const connected = name === 'Gmail' || name === 'Slack' || name === 'Google Calendar';
                   return (
                     <div key={name} className="flex items-center justify-between py-2 border-b border-border/15">
                       <span className="text-sm text-foreground/75">{name}</span>
                       <Button variant={connected ? 'ghost' : 'outline'} size="sm" className={cn('text-xs', connected && 'text-primary')} onClick={() => toast({ description: connected ? `Disconnect ${name}?` : `Connecting ${name}...` })}>
-                        {connected ? 'Connected' : 'Connect'}
+                        {connected ? 'Connect' : 'Connect'}
                       </Button>
                     </div>
                   );

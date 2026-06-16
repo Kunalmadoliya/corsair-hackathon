@@ -25,12 +25,12 @@ const getPath = generatePath("/corsair-gmail")
 
 export const corsairGmailRouter = router({
 
-    connectGmail : authenticatedProcedure.meta({
+     connectGmail : authenticatedProcedure.meta({
         openapi: { method: "POST", path: getPath("/connectGmail"), tags: TAGS }
     }).input(connectGmailInputType)
     .output(connectGmailOutputType)
-    .mutation(async ({ input }) => {
-        const { id } = input
+    .mutation(async ({ ctx }) => {
+         const id = ctx.user.id
         const { url } = await corsairGmailService.connectGmail(id)
         return { url }
     }),
@@ -41,16 +41,16 @@ export const corsairGmailRouter = router({
     .output(gmailCallbackOutputType)
     .mutation(async ({ input }) => {
         const { code, state } = input
-        const { url } = await corsairGmailService.gmailCallback(code, state)
-        return { url }
+        await corsairGmailService.gmailCallback(code, state)
+        return { url: "/dashboard" }
     }),
 
     readGmail : authenticatedProcedure.meta({
         openapi: { method: "POST", path: getPath("/readGmail"), tags: TAGS }
     }).input(readGmailInputType)
     .output(readGmailOutputType)
-    .mutation(async ({ input }) => {
-        const { id } = input
+    .mutation(async ({ ctx }) => {
+       const id = ctx.user.id
         const { readInboxes } = await corsairGmailService.readGmail(id)
         return { inboxes: readInboxes }
     }),

@@ -127,8 +127,9 @@ export const authRouter = router({
     .input(getUserWithTokenInputModel)
     .output(getUserWithTokenOutputModel)
     .query(async ({ ctx }) => {
-      const { id, email } = await userService.getUserInfoById(ctx.user.id)
-      return { id, email }
+      const { id, email, fullname, profileImageUrl, isGmailConnected, isCalendarConnected } =
+        await userService.getMe(ctx.user.id)
+      return { id, email, fullname, profileImageUrl, isGmailConnected, isCalendarConnected }
     }),
 
 

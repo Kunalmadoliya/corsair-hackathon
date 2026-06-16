@@ -11,7 +11,7 @@ import { AnalyticsPage } from './pages/analytics-page';
 import { SettingsPage } from './pages/settings-page';
 import { IntegrationsPage } from './pages/integrations-page';
 import { Logo } from './logo';
-import { Command, Bell, ArrowLeft } from 'lucide-react';
+import { Command, Bell, ArrowLeft, Mail, ArrowRight } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { Toaster } from '~/components/ui/toaster';
 import { usegetUser } from '~/hooks/api/auth/auth';
@@ -20,10 +20,37 @@ import { useEffect } from 'react';
 
 interface DashboardProps { onBack?: () => void; }
 
+function GmailNotConnectedBanner({ onGoToIntegrations }: { onGoToIntegrations: () => void }) {
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-[#EA4335]/10 border border-[#EA4335]/20 flex items-center justify-center">
+          <Mail className="w-8 h-8 text-[#EA4335]" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold tracking-tight">Connect Gmail to get started</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Corsair needs access to your Gmail account before it can read, summarise, and act on your emails. Connect Gmail to unlock AI productivity features.
+          </p>
+        </div>
+        <Button
+          onClick={onGoToIntegrations}
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          Go to Integrations
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function Dashboard({ onBack }: DashboardProps) {
 
   const { user, isLoading } = usegetUser();
   const router = useRouter();
+    const [activePage, setActivePage] = useState('dashboard');
+  const [commandBarOpen, setCommandBarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -33,8 +60,7 @@ export function Dashboard({ onBack }: DashboardProps) {
 
   if (isLoading || !user) return null;
   
-  const [activePage, setActivePage] = useState<PageId>('dashboard');
-  const [commandBarOpen, setCommandBarOpen] = useState(false);
+
 
   const handleCommand = (command: string) => {
     const key = command.replace('/', '') as PageId;
@@ -75,7 +101,11 @@ export function Dashboard({ onBack }: DashboardProps) {
               <span className="text-sm font-semibold capitalize">{activePage}</span>
             </div>
           )}
-          {activePage === 'dashboard' && <ChatInterface />}
+          {activePage === 'dashboard' && (
+            user.isGmailConnected
+              ? <ChatInterface />
+              : <GmailNotConnectedBanner onGoToIntegrations={() => setActivePage('integrations')} />
+          )}
           {activePage === 'inbox' && <InboxPage />}
           {activePage === 'calendar' && <CalendarPage />}
           {activePage === 'workflows' && <WorkflowsPage />}

@@ -45,5 +45,9 @@ export const loginWithOAuthOutputModel = z.object({
 export const getUserWithTokenInputModel = z.undefined()
 export const getUserWithTokenOutputModel = z.object({
     id: z.string().describe("Id of the user"),
-    email: z.string().email().describe("Email of the user")
+    email: z.string().email().describe("Email of the user"),
+    fullname: z.string().describe("Full name of the user"),
+    profileImageUrl: z.string().nullable().describe("Profile image URL of the user"),
+    isGmailConnected: z.boolean().describe("Whether the user has connected Gmail"),
+    isCalendarConnected: z.boolean().describe("Whether the user has connected Google Calendar"),
 })

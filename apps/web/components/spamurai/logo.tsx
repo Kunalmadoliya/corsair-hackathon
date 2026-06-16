@@ -31,7 +31,7 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
       </svg>
       {showText && (
         <span className={cn('font-bold tracking-tight text-foreground', textSizes[size])}>
-          Corsair
+          Spamurai
         </span>
       )}
     </div>

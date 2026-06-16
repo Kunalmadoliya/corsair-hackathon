@@ -16,7 +16,6 @@ const navItems: { icon: React.ElementType; label: string; id: PageId; badge?: st
   { icon: Calendar, label: 'Calendar', id: 'calendar' },
   { icon: GitBranch, label: 'Workflows', id: 'workflows' },
   { icon: BarChart3, label: 'Analytics', id: 'analytics' },
-  { icon: Settings, label: 'Integrations', id: 'integrations' },
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 

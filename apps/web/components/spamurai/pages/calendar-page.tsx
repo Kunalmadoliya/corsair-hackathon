@@ -190,7 +190,7 @@ export function CalendarPage() {
                     Attendees ({selected.attendees.length})
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {selected.attendees.map((a) => (
+                    {selected.attendees.map((a: any) => (
                       <span
                         key={a}
                         className="px-2.5 py-1 rounded-lg bg-secondary/50 text-xs text-foreground/60 border border-border/30"

@@ -1,4 +1,5 @@
 import { db, eq } from "@repo/database";
+import {usersTable  } from "@repo/database/schema";
 
 import { env } from "../../env";
 import { generateOAuthUrl, processOAuthCallback } from "corsair/oauth";
@@ -32,36 +33,33 @@ class CorsairGmailServices {
 
     public async connectGmail(id: string) {
 
-        const checkUser = await this.isUserAlreadyExisted(id)
-
-        if (checkUser) {
-            throw new Error("User already connected with Corsair")
-        }
-
         await setupCorsair(corsair, {
-            tenantId: id,
+            tenantId: id
         });
-
 
         const { url } = await generateOAuthUrl(
             corsair,
             "gmail",
             {
                 tenantId: id,
-                redirectUri: env.BASE_URL + '/api/corsair/callback'
+                redirectUri:
+                    env.WEB_URL + "/api/corsair/callback"
             }
-        )
+        );
 
-        return { url }
+        return { url };
     }
 
 
     public async gmailCallback(code: string, state: string) {
-        const result = await processOAuthCallback(corsair, { code, state, redirectUri: env.BASE_URL + '/api/corsair/callback' })
+        const result = await processOAuthCallback(corsair, { code, state, redirectUri: env.WEB_URL + '/api/corsair/callback' })
 
         if (!result) {
             throw new Error("")
         }
+
+        await db.update(usersTable).set({isGmailConnected: true}).where(eq(usersTable.id, result.tenantId))
+
 
         return result
     }
@@ -69,7 +67,7 @@ class CorsairGmailServices {
     public async readGmail(tenantId: string) {
         const tenant = corsair.withTenant(tenantId)
 
-        const readInboxes = tenant.gmail.api.messages.list({
+        const readInboxes = await tenant.gmail.api.messages.list({
             maxResults: 10,
             includeSpamTrash: false
         })

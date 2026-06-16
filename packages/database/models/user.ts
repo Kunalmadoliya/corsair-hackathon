@@ -40,6 +40,9 @@ export const usersTable = pgTable("users", {
 
   isSuspended: boolean("is_suspended").default(false).notNull(),
 
+  isGmailConnected: boolean("is_gmail_connected").default(false).notNull(),
+  isCalendarConnected: boolean("is_calendar_connected").default(false).notNull(),
+
   profileImageUrl: text("profile_image_url"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),

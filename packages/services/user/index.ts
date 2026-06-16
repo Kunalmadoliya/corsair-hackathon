@@ -194,6 +194,38 @@ class UserService {
     }
   }
 
+  public async getMe(id: string) {
+    try {
+      const result = await db
+        .select({
+          id: usersTable.id,
+          email: usersTable.email,
+          fullname: usersTable.fullname,
+          profileImageUrl: usersTable.profileImageUrl,
+          isGmailConnected: usersTable.isGmailConnected,
+          isCalendarConnected: usersTable.isCalendarConnected,
+        })
+        .from(usersTable)
+        .where(eq(usersTable.id, id));
+
+      if (!result[0]) {
+        throw new Error("User not found");
+      }
+
+      return {
+        id: result[0].id,
+        email: result[0].email,
+        fullname: result[0].fullname,
+        profileImageUrl: result[0].profileImageUrl,
+        isGmailConnected: result[0].isGmailConnected,
+        isCalendarConnected: result[0].isCalendarConnected,
+      };
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
   public async verifyAndDecodeUserToken(token: string) {
     try {
       const result = jwt.verify(token, env.JWT_SECRET) as GenerateUserTokenPayloadType;

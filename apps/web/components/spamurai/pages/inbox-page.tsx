@@ -148,7 +148,7 @@ export function InboxPage() {
             <div className="flex-1 overflow-y-auto custom-scroll p-5">
               <div className="max-w-2xl">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary">{selected.from.split(' ').map(n => n[0]).join('')}</div>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary">{selected.from.split(' ').map((n: string) => n[0]).join('')}</div>
                   <div>
                     <div className="text-sm font-semibold">{selected.from}</div>
                     <div className="text-xs text-muted-foreground">{selected.email} &middot; {selected.time}</div>
