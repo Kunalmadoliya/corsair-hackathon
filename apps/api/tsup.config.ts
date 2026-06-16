@@ -4,7 +4,21 @@ export default defineConfig({
   entry: ["./src/index.ts"],
   format: ["esm"],
 
-  noExternal: ["@spamurai"],
+  noExternal: [/^@repo\//],
+  external: [
+    /^@corsair-dev\//,
+    /^@openai\//,
+    "bcryptjs",
+    "corsair",
+    "dotenv",
+    "google-auth-library",
+    "jsonwebtoken",
+    "resend",
+    "zod",
+    "drizzle-orm",
+    "pg",
+    "winston",
+  ],
   splitting: false,
   bundle: true,
   outDir: "./dist",
@@ -13,4 +27,4 @@ export default defineConfig({
   loader: { ".json": "copy" },
   minify: true,
   sourcemap: false,
-});
+});
