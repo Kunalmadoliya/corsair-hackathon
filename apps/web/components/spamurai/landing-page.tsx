@@ -1,6 +1,6 @@
 'use client';
 
-import { DemoConversation } from './demo-conversation';
+// import { DemoConversation } from './demo-conversation';
 import { BentoGrid } from './bento-grid';
 import { Logo } from './logo';
 import { Button } from '~/components/ui/button';
@@ -15,7 +15,7 @@ import {useRouter} from "next/navigation"
 export function LandingPage() {
   const {user} = usegetUser()
   const router = useRouter()
-  const {logoutUserAsync , logoutUser} = useLogout()
+  const {logoutUserAsync} = useLogout()
 
 
   
@@ -41,7 +41,8 @@ export function LandingPage() {
                 try {
                   await logoutUserAsync(); 
                 } catch (e) {
-                  // Ignore errors, force clear local state
+                 console.log(e);
+                 
                 }
                 router.push('/');
                 // In auth.ts, onSuccess refreshes page, but if it fails we might still need to force reload or let user be un-auth'd. 
@@ -87,16 +88,16 @@ export function LandingPage() {
             </Button>
           </div>
 
-          <div className="mt-12 animate-fade-in">
+          {/* <div className="mt-12 animate-fade-in">
             <DemoConversation />
-          </div>
+          </div> */}
         </div>
       </section>
 
       {/* Stats */}
       <section className="py-10 px-6 border-y border-border/25">
         <div className="max-w-3xl mx-auto grid grid-cols-4 gap-8 text-center">
-          {[{ v: '10K+', l: 'Users' }, { v: '2M+', l: 'Emails' }, { v: '38h', l: 'Saved/Week' }, { v: '99.9%', l: 'Uptime' }].map(s => (
+          {([{ v: '10K+', l: 'Users' }, { v: '2M+', l: 'Emails' }, { v: '38h', l: 'Saved/Week' }, { v: '99.9%', l: 'Uptime' }] as { v: string; l: string }[]).map(s => (
             <div key={s.l}><div className="text-2xl md:text-3xl font-bold text-gradient">{s.v}</div><div className="text-sm text-muted-foreground mt-1">{s.l}</div></div>
           ))}
         </div>
@@ -116,7 +117,7 @@ export function LandingPage() {
               { step: '01', icon: MessageSquare, title: 'Tell Corsair what you need', desc: 'Type a natural language command. No menus, no clicks, no learning curve.' },
               { step: '02', icon: Zap, title: 'It handles the work', desc: 'Corsair drafts emails, schedules meetings, finds information, and executes workflows.' },
               { step: '03', icon: Shield, title: 'Confirm and done', desc: 'Review the action, make adjustments if needed, and confirm. Everything else is automated.' },
-            ].map(item => {
+            ].map((item: { step: string; icon: React.ElementType; title: string; desc: string }) => {
               const Icon = item.icon;
               return (
                 <div key={item.step} className="text-center card-hover rounded-xl p-5">
@@ -141,14 +142,14 @@ export function LandingPage() {
             <p className="mt-2 text-base text-muted-foreground">Start free. Upgrade when you need more.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
-            {pricingPlans.map(plan => (
+            {pricingPlans.map((plan: { name: string; description: string; price: number | string; features: string[]; highlighted?: boolean; cta: string }) => (
               <div key={plan.name} className={`rounded-xl border p-6 flex flex-col card-hover ${plan.highlighted ? 'border-primary/35 bg-primary/4 ring-1 ring-primary/20' : 'border-border/40 bg-card'}`}>
                 {plan.highlighted && <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">Most Popular</div>}
                 <h3 className="text-xl font-bold">{plan.name}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
                 <div className="mt-4 mb-5"><span className="text-4xl font-bold">${plan.price}</span><span className="text-base text-muted-foreground">/mo</span></div>
                 <ul className="space-y-2.5 flex-1 mb-6">
-                  {plan.features.map(f => (
+                  {plan.features.map((f: string) => (
                     <li key={f} className="flex items-start gap-2 text-sm text-foreground/80"><Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />{f}</li>
                   ))}
                 </ul>

@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+// This page is only reachable after an OAuth redirect — never prerender it.
+export const dynamic = 'force-dynamic';
+
+import { Suspense, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { trpc } from '~/trpc/client';
 import { useToast } from '~/hooks/use-toast';
@@ -33,7 +36,6 @@ function CallbackHandler() {
   });
 
   useEffect(() => {
-    // Guard against double-invocation in React Strict Mode
     if (hasRun.current) return;
     hasRun.current = true;
 
@@ -64,5 +66,18 @@ function CallbackHandler() {
 }
 
 export default function CallbackPage() {
-  return <CallbackHandler />;
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          </div>
+        </div>
+      }
+    >
+      <CallbackHandler />
+    </Suspense>
+  );
 }

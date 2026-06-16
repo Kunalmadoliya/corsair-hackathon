@@ -49,7 +49,7 @@ export function Dashboard({ onBack }: DashboardProps) {
 
   const { user, isLoading } = usegetUser();
   const router = useRouter();
-    const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState<PageId>('dashboard');
   const [commandBarOpen, setCommandBarOpen] = useState(false);
 
   useEffect(() => {
