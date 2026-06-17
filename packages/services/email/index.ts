@@ -47,9 +47,6 @@ export async function sendVerificationEmail(
       );
     }
 
-    console.log("RESEND_API_KEY:", env.RESEND_API_KEY?.slice(0, 8));
-console.log("EMAIL_FROM:", env.EMAIL_FROM);
-console.log("TO:", email);
 
     return {
       success: true,

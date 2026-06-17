@@ -19,11 +19,7 @@ function GoogleCallbackContent() {
   useEffect(() => {
     if (code && !hasCalled.current) {
 
-      console.log("code", code);
-console.log("error", errorParam);
-console.log("url", window.location.href);
       hasCalled.current = true;
-      console.log("Starting OAuth");
       loginWithOAuthAsync({ code, provider: "GOOGLE_OAUTH" })
         .then(() => {
           router.push("/onboarding");

@@ -34,6 +34,7 @@ class UserService {
           "https://www.googleapis.com/auth/userinfo.profile",
           "https://www.googleapis.com/auth/userinfo.email"
         ],
+        redirect_uri: env.GOOGLE_OAUTH_REDIRECT_URI,
       });
       supportedAuthenticationProviders.push({
         provider: "GOOGLE_OAUTH",
