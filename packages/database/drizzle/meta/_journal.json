@@ -22,6 +22,20 @@
       "when": 1781609185319,
       "tag": "0002_harsh_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781692038923,
+      "tag": "0003_mighty_eddie_brock",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781712519236,
+      "tag": "0004_minor_mimic",
+      "breakpoints": true
     }
   ]
 }

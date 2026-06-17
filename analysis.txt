@@ -1,0 +1,62 @@
+# Root Cause Analysis: Gmail & Calendar Data Retrieval
+
+## 1. OAuth Verification
+Trace results:
+- **connectGmail**: Sends `ctx.user.id` to Corsair OAuth helper.
+- **generateOAuthUrl**: Passes `tenantId` (the user's ID) into the OAuth state.
+- **Google Consent**: Occurs successfully.
+- **processOAuthCallback**: Extracts the `tenantId` from the state.
+- **Token Storage**: `createAccountKeyManager` successfully encrypts and stores the Google OAuth tokens in `corsair_accounts` mapped to the `tenantId`.
+- **Corsair Account Creation**: The `corsair_accounts` table correctly holds both Gmail and Google Calendar integration entries with the `tenantId` set to the user ID.
+- **Database updates**: `isGmailConnected` and `isCalendarConnected` become true in the `users` table.
+
+**Conclusion**: The OAuth flow is working perfectly. The `tenantId` correctly matches `ctx.user.id` throughout the system.
+
+## 2. Tenant Verification
+- `setupCorsair(corsair, { tenantId })` correctly maps to the user's ID.
+- When calling `corsair.withTenant(tenantId).gmail.api...`, it successfully locates the keys because `tenantId` strictly equals the `users.id`.
+- I have manually verified this by running direct queries to the `corsair_accounts` table and seeing the tokens correctly mapped.
+
+## 3. Gmail Read Flow Audit
+- `trpc.corsairGmail.listMessages` receives `ctx.user.id`.
+- `corsairGmailService.listMessages` calls `corsair.withTenant(tenantId).gmail.api.messages.list({ userId: 'me' })`.
+- **Finding**: The Corsair API correctly returns an object formatted like:
+  ```json
+  {
+    "messages": [ ... ],
+    "nextPageToken": "...",
+    "resultSizeEstimate": 201
+  }
+  ```
+- **The Exact Failure Point**: In `apps/web/components/spamurai/pages/inbox-page.tsx`, the frontend attempts to read the response using:
+  `if (res?.messages?.messages) { ... }`
+  Since the response is simply `{ messages: [...] }`, `res.messages.messages` evaluates to `undefined`. The data is silently discarded and the list remains empty.
+
+## 4. Calendar Read Flow Audit
+- `trpc.corsairCalendar.getManyEvents` operates similarly.
+- **Finding**: The Corsair API returns:
+  ```json
+  {
+    "items": [ ... ],
+    "summary": "...",
+    "timeZone": "..."
+  }
+  ```
+- **The Exact Failure Point**: In `apps/web/components/spamurai/pages/calendar-page.tsx`, the frontend attempts to read the response using:
+  `if (res?.events?.items) { ... }`
+  Since the response is simply `{ items: [...] }`, `res.events.items` evaluates to `undefined`, and no events are rendered.
+
+## 5. Dashboard Audit
+- The `UnreadBadge` in `dashboard.tsx` attempts to read the unread count via:
+  `if (res?.messages?.resultSizeEstimate) setCount(res.messages.resultSizeEstimate);`
+- **Finding**: This actually fails for the same reason. The response is `{ resultSizeEstimate: N }`, so `res.messages.resultSizeEstimate` is undefined.
+
+## 6. Required Fixes
+To fix the data flow:
+1. **Inbox Page**: Change `res?.messages?.messages` to `res?.messages` and map over `res.messages`.
+2. **Calendar Page**: Change `res?.events?.items` to `res?.items` and map over `res.items`.
+3. **Dashboard Page**: Change `res?.messages?.resultSizeEstimate` to `res?.resultSizeEstimate`.
+4. **Debug Endpoint**: Add the requested `gmail.debugConnection` route in `packages/trpc/server/routes/corsair-gmail/route.ts` to expose connection and token status.
+
+## 7. Future Architecture
+As explicitly instructed, I have halted all webhook implementation efforts until we successfully patch this data flow and confirm the Dashboard renders the fetched data. Once confirmed working, we will proceed with the webhook and local database ingestion plan.

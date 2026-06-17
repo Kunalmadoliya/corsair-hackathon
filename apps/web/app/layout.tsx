@@ -9,9 +9,28 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Spamurai — AI Communication Operating System",
-  description:
-    "Master communication through conversation. Your AI Chief of Staff.",
+  title: {
+    default: "Spamurai — AI Communication Operating System",
+    template: "%s | Spamurai"
+  },
+  description: "Master communication through conversation. Your AI Chief of Staff for email, scheduling, and workflow automation.",
+  keywords: ["AI", "Communication", "Operating System", "Chief of Staff", "Email Management", "Agentic Workflow"],
+  authors: [{ name: "Spamurai Team" }],
+  creator: "Spamurai",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://spamurai.com",
+    title: "Spamurai — AI Communication Operating System",
+    description: "Master communication through conversation. Your AI Chief of Staff for email, scheduling, and workflow automation.",
+    siteName: "Spamurai",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Spamurai — AI Communication Operating System",
+    description: "Master communication through conversation. Your AI Chief of Staff.",
+    creator: "@spamurai",
+  },
 };
 
 export default function RootLayout({
@@ -20,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans`}>
         <GlobalProviders>{children}</GlobalProviders>
       </body>

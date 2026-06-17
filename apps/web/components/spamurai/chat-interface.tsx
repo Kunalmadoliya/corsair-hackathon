@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Mic, Mail, Calendar, Users, Search, Zap, FileText, Check, Clock } from 'lucide-react';
 import { suggestedActions } from '~/lib/mock-data';
 import { useToast } from '~/hooks/use-toast';
+import { trpc } from '~/trpc/client';
+import { cn } from '~/lib/utils';
+import { Button } from '~/components/ui/button';
 
 interface ChatMessage {
   id: string;
@@ -27,10 +30,16 @@ function getActionIcon(text: string): React.ElementType {
   return Check;
 }
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+  chatId: string | undefined;
+  setChatId: (id: string | undefined) => void;
+  onNewChat: () => void;
+}
+
+export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfaceProps) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '0', role: 'assistant', content: 'Welcome back. You have 47 unread emails, 3 meetings today, and 2 pending follow-ups. How can I help?' },
+    { id: '0', role: 'assistant', content: 'Welcome back! I am Corsair, your AI communications companion. I am connected to your Gmail and Google Calendar. How can I help you today?' },
   ]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -38,33 +47,76 @@ export function ChatInterface() {
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const trpcUtils = trpc.useUtils();
+  const { data: chatHistory, isLoading: isLoadingChat } = trpc.chat.listChats.useQuery({});
+  const { data: latestChatData } = trpc.chat.getChat.useQuery(
+    { chatId: chatId || '' },
+    { enabled: !!chatId }
+  );
+
+  useEffect(() => {
+    // If we have history, load the most recent chat
+    if (chatHistory?.chats && chatHistory.chats.length > 0 && !chatId) {
+        setChatId(chatHistory.chats[0].id);
+    }
+  }, [chatHistory, chatId]);
+
+  useEffect(() => {
+      if (latestChatData?.messages) {
+          const loadedMessages = latestChatData.messages.map((m: any) => ({
+              id: m.id,
+              role: m.role as 'user' | 'assistant',
+              content: m.content
+          }));
+          if (loadedMessages.length > 0) {
+              setMessages(loadedMessages);
+          }
+      }
+  }, [latestChatData, chatId]);
+
+  const handleNewChat = () => {
+    onNewChat();
+    setMessages([{ id: '0', role: 'assistant', content: 'Welcome back! I am Corsair, your AI communications companion. I am connected to your Gmail and Google Calendar. How can I help you today?' }]);
+  };
+
+  const { mutateAsync: chatWithAgent } = trpc.openaiagents.openaiagent.useMutation();
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isProcessing]);
 
-  const handleSubmit = (text: string) => {
+  const handleSubmit = async (text: string) => {
     if (!text.trim() || isProcessing) return;
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const l = text.toLowerCase();
-      let assistantMsg: ChatMessage;
-
-      if (l.includes('summarize') || l.includes('inbox')) {
-        assistantMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Here\'s your inbox summary:', actions: ['47 unread emails found', '12 marked urgent', '8 require response', '3 meetings scheduled today', 'Summary generated'] };
-      } else if (l.includes('email') || l.includes('send') || l.includes('draft')) {
-        assistantMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'I\'ve drafted the email for you:', actions: ['Contact found: Rahul Sharma', 'Draft generated', 'Ready for review'], card: { type: 'email', data: { to: 'Rahul Sharma', subject: 'Project Update - Q3 Deployment', preview: 'Hey Rahul,\n\nJust a quick update on the Q3 deployment timeline. The engineering team has confirmed the rollout window for tomorrow at 2 PM EST. All 847 tests are passing and the rollback plan is documented in Confluence.\n\nLet me know if you have any questions.\n\nBest regards', status: 'draft' } } };
-      } else if (l.includes('schedule') || l.includes('meeting') || l.includes('call')) {
-        assistantMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'I\'ve found an available time and created the meeting:', actions: ['Calendar checked', 'Available slot found: Friday 2 PM', 'Meeting scheduled', 'Invitations sent to 6 attendees'], card: { type: 'calendar', data: { title: 'Weekly Product Review', date: 'Friday', time: '2:00 PM - 3:00 PM', attendees: 6, status: 'confirmed' } } };
-      } else if (l.includes('follow')) {
-        assistantMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'I\'ve identified recipients and generated follow-ups:', actions: ['23 recipients identified', 'Follow-up drafts generated', 'Personalized per contact', 'Ready to send'] };
-      } else {
-        assistantMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'I can help with that. What would you like me to do?', actions: ['Search your inbox for relevant emails', 'Draft a response', 'Create a workflow for this'] };
+    try {
+      const res = await chatWithAgent({ message: text.trim(), chatId });
+      if (res.chatId && !chatId) {
+          setChatId(res.chatId);
+          trpcUtils.chat.listChats.invalidate();
       }
+      const assistantMsg: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: res.message,
+      };
       setMessages(prev => [...prev, assistantMsg]);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to communicate with Corsair agent.",
+        variant: "destructive",
+      });
+      const errorMsg: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "Sorry, I encountered an error while communicating with Corsair. Please try again.",
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
       setIsProcessing(false);
-    }, 1200);
+    }
   };
 
   const handleEditCard = (msgId: string, cardData: Record<string, string | number>) => {
@@ -94,8 +146,10 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0">
-      <div className="flex-1 overflow-y-auto custom-scroll px-6 py-5 space-y-5">
+    <div className="flex-1 flex h-full min-w-0">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full min-w-0">
+        <div className="flex-1 overflow-y-auto custom-scroll px-6 py-5 space-y-5">
         {messages.map(msg => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
@@ -250,6 +304,7 @@ export function ChatInterface() {
           </button>
         </div>
         <div className="text-center mt-1.5 text-xs text-muted-foreground/40">Enter to send &middot; /email /calendar /search /workflow</div>
+      </div>
       </div>
     </div>
   );

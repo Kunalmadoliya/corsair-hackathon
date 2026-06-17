@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar, PageId } from './sidebar';
 import { ChatInterface } from './chat-interface';
 import { CommandBar } from './command-bar';
@@ -11,12 +11,38 @@ import { AnalyticsPage } from './pages/analytics-page';
 import { SettingsPage } from './pages/settings-page';
 import { IntegrationsPage } from './pages/integrations-page';
 import { Logo } from './logo';
-import { Command, Bell, ArrowLeft, Mail, ArrowRight } from 'lucide-react';
+import { Command, Bell, ArrowLeft, Mail, ArrowRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { Toaster } from '~/components/ui/toaster';
 import { usegetUser } from '~/hooks/api/auth/auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { trpc } from '~/trpc/client';
+import { useListMessages } from '~/hooks/api/corsair/gmail';
+
+function UnreadBadge() {
+  const { user } = usegetUser();
+  const { listMessagesAsync } = useListMessages();
+
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (user?.isGmailConnected) {
+      listMessagesAsync({ q: 'is:unread' }).then((res: any) => {
+        if (res?.resultSizeEstimate) {
+          setCount(res.resultSizeEstimate);
+        }
+      }).catch(console.error);
+    }
+  }, [user?.isGmailConnected]);
+
+  if (!count) return null;
+
+  return (
+    <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+      {count}
+    </div>
+  );
+}
 
 interface DashboardProps { onBack?: () => void; }
 
@@ -24,20 +50,25 @@ function GmailNotConnectedBanner({ onGoToIntegrations }: { onGoToIntegrations: (
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="max-w-md w-full text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-2xl bg-[#EA4335]/10 border border-[#EA4335]/20 flex items-center justify-center">
-          <Mail className="w-8 h-8 text-[#EA4335]" />
+        <div className="flex justify-center -space-x-3">
+          <div className="w-16 h-16 rounded-2xl bg-[#EA4335]/10 border border-[#EA4335]/20 flex items-center justify-center z-10">
+            <Mail className="w-8 h-8 text-[#EA4335]" />
+          </div>
+          <div className="w-16 h-16 rounded-2xl bg-[#4285F4]/10 border border-[#4285F4]/20 flex items-center justify-center">
+            <CalendarIcon className="w-8 h-8 text-[#4285F4]" />
+          </div>
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold tracking-tight">Connect Gmail to get started</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Connect Gmail &amp; Calendar to get started</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Corsair needs access to your Gmail account before it can read, summarise, and act on your emails. Connect Gmail to unlock AI productivity features.
+            Corsair needs access to your Gmail and Google Calendar before it can read, summarise, and act on your emails — and help you manage your schedule.
           </p>
         </div>
         <Button
           onClick={onGoToIntegrations}
           className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          Go to Integrations
+          Connect Google
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
@@ -45,12 +76,19 @@ function GmailNotConnectedBanner({ onGoToIntegrations }: { onGoToIntegrations: (
   );
 }
 
+
 export function Dashboard({ onBack }: DashboardProps) {
 
   const { user, isLoading } = usegetUser();
   const router = useRouter();
   const [activePage, setActivePage] = useState<PageId>('dashboard');
   const [commandBarOpen, setCommandBarOpen] = useState(false);
+  const [chatId, setChatId] = useState<string | undefined>(undefined);
+
+  const handleNewChat = () => {
+    setActivePage('dashboard');
+    setChatId(undefined);
+  };
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -87,14 +125,22 @@ export function Dashboard({ onBack }: DashboardProps) {
           </button>
           <button onClick={() => setActivePage('inbox')} className="relative w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors">
             <Bell className="w-4 h-4 text-muted-foreground" />
-            <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">47</div>
+            <UnreadBadge />
           </button>
-          <button className="w-8 h-8 rounded-full bg-primary/8 border border-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary">KT</button>
+          <button className="w-8 h-8 rounded-full bg-primary/8 border border-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary">
+            {user.fullname ? user.fullname.substring(0, 2).toUpperCase() : 'U'}
+          </button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar activePage={activePage} onNavigate={setActivePage} />
+        <Sidebar 
+          activePage={activePage} 
+          onNavigate={setActivePage} 
+          chatId={chatId}
+          onChatSelect={(id) => { setChatId(id); setActivePage('dashboard'); }}
+          onNewChat={handleNewChat}
+        />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {activePage !== 'dashboard' && (
             <div className="h-10 flex items-center px-5 border-b border-border/20 flex-shrink-0">
@@ -103,7 +149,7 @@ export function Dashboard({ onBack }: DashboardProps) {
           )}
           {activePage === 'dashboard' && (
             user.isGmailConnected
-              ? <ChatInterface />
+              ? <ChatInterface chatId={chatId} setChatId={setChatId} onNewChat={handleNewChat} />
               : <GmailNotConnectedBanner onGoToIntegrations={() => setActivePage('integrations')} />
           )}
           {activePage === 'inbox' && <InboxPage />}

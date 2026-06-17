@@ -1,5 +1,7 @@
-import IntegrationPage from "~/components/spamurai/IntegrationPage";
+import OnboardingClient from "./onboarding-client";
+
+export const dynamic = "force-dynamic";
 
 export default function OnboardingPage() {
-  return <IntegrationPage />;
+  return <OnboardingClient />;
 }

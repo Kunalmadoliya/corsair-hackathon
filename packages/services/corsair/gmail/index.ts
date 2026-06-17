@@ -1,82 +1,221 @@
 import { db, eq } from "@repo/database";
-import {usersTable  } from "@repo/database/schema";
+import { usersTable } from "@repo/database/schema";
 
 import { env } from "../../env";
 import { generateOAuthUrl, processOAuthCallback } from "corsair/oauth";
+import { exchangeCodeForTokens, createAccountKeyManager, initializeAccountDEK } from "corsair/core";
 import { corsair } from "../../corsair";
 
-import { corsairAccounts, corsairEntities, corsairEvents, corsairIntegrations } from "@repo/database/schema";
+import { corsairAccounts } from "@repo/database/schema";
 
-import { setupCorsair } from 'corsair';
+import { setupCorsair } from "corsair";
 
-
-
+// Google Calendar OAuth scope to append to the Gmail flow
+const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
 
 class CorsairGmailServices {
 
-    //    public async onUserCreated(userId: string){
-    //         await setupCorsair(corsair, { tenantId: userId });
-    //         const tenant = corsair.withTenant(userId);
-    // await tenant.linear.keys.set_api_key(apiKey);
-    // // account row must exist — setupCorsair creates it
-    //    }
-
-    private async isUserAlreadyExisted(id: string) {
-        const data = await db.select().from(corsairAccounts).where(eq(corsairAccounts.tenantId, id))
-
-        if (data.length > 1) {
-            throw new Error("Something went wrong!")
+    private async ensureConnected(tenantId: string) {
+        const user = await db.select().from(usersTable).where(eq(usersTable.id, tenantId)).limit(1);
+        if (!user[0] || !user[0].isGmailConnected) {
+            throw new Error("Gmail is not connected for this user");
         }
-
-        return data[0] ?? null
     }
 
     public async connectGmail(id: string) {
-
-        await setupCorsair(corsair, {
-            tenantId: id
-        });
-
+        await setupCorsair(corsair, { tenantId: id });
         const { url } = await generateOAuthUrl(
             corsair,
             "gmail",
             {
                 tenantId: id,
-                redirectUri:
-                    env.WEB_URL + "/api/corsair/callback"
+                redirectUri: env.WEB_URL + "/api/corsair/callback"
             }
         );
-
         return { url };
     }
 
-
     public async gmailCallback(code: string, state: string) {
-        const result = await processOAuthCallback(corsair, { code, state, redirectUri: env.WEB_URL + '/api/corsair/callback' })
+        const gmailResult = await processOAuthCallback(corsair, {
+            code,
+            state,
+            redirectUri: env.WEB_URL + "/api/corsair/callback"
+        });
 
-        if (!result) {
-            throw new Error("")
+        if (!gmailResult) {
+            throw new Error("Gmail OAuth callback failed");
         }
 
-        await db.update(usersTable).set({isGmailConnected: true}).where(eq(usersTable.id, result.tenantId))
+        const tenantId = gmailResult.tenantId;
 
+        try {
+            const internalCfg = (corsair as any)[
+                Object.getOwnPropertySymbols(corsair as any).find(
+                    (s) => typeof (corsair as any)[s]?.kek === "string"
+                )!
+            ] as { kek: string; database: any };
 
-        return result
+            const kek = internalCfg?.kek ?? env.CORSAIR_KEK;
+            const database = internalCfg?.database;
+
+            if (kek && database) {
+                const gmailKeyManager = createAccountKeyManager({
+                    authType: "oauth_2",
+                    integrationName: "gmail",
+                    tenantId,
+                    kek,
+                    database,
+                });
+                
+                const accessToken = await gmailKeyManager.get_access_token();
+                const refreshToken = await gmailKeyManager.get_refresh_token();
+                const expiresAt = await gmailKeyManager.get_expires_at();
+
+                if (accessToken) {
+                    await setupCorsair(corsair, { tenantId });
+                }
+            }
+        } catch (calendarErr) {
+            console.warn("[corsair] token fetch failed (non-fatal):", calendarErr);
+        }
+
+        await db
+            .update(usersTable)
+            .set({ isGmailConnected: true })
+            .where(eq(usersTable.id, tenantId));
+
+        return gmailResult;
     }
 
-    public async readGmail(tenantId: string) {
-        const tenant = corsair.withTenant(tenantId)
-
-        const readInboxes = await tenant.gmail.api.messages.list({
-            maxResults: 10,
-            includeSpamTrash: false
-        })
-
-        return { readInboxes }
+    // --- Drafts ---
+    public async createDraft(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.drafts.create({ userId: 'me', ...payload });
     }
 
+    public async deleteDraft(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.drafts.delete({ userId: 'me', ...payload });
+    }
 
+    public async getDraft(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.drafts.get({ userId: 'me', ...payload });
+    }
+
+    public async listDrafts(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.drafts.list({ userId: 'me', ...payload });
+    }
+
+    public async sendDraft(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.drafts.send({ userId: 'me', ...payload });
+    }
+
+    public async updateDraft(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.drafts.update({ userId: 'me', ...payload });
+    }
+
+    // --- Labels ---
+    public async createLabel(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.labels.create({ userId: 'me', ...payload });
+    }
+
+    public async deleteLabel(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.labels.delete({ userId: 'me', ...payload });
+    }
+
+    public async getLabel(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.labels.get({ userId: 'me', ...payload });
+    }
+
+    public async listLabels(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.labels.list({ userId: 'me', ...payload });
+    }
+
+    public async updateLabel(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.labels.update({ userId: 'me', ...payload });
+    }
+
+    // --- Messages ---
+    public async batchModifyMessages(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.batchModify({ userId: 'me', ...payload });
+    }
+
+    public async deleteMessage(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.delete({ userId: 'me', ...payload });
+    }
+
+    public async getMessage(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.get({ userId: 'me', ...payload });
+    }
+
+    public async listMessages(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.list({ userId: 'me', ...payload });
+    }
+
+    public async modifyMessage(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.modify({ userId: 'me', ...payload });
+    }
+
+    public async sendMessage(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.send({ userId: 'me', ...payload });
+    }
+
+    public async trashMessage(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.trash({ userId: 'me', ...payload });
+    }
+
+    public async untrashMessage(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.messages.untrash({ userId: 'me', ...payload });
+    }
+
+    // --- Threads ---
+    public async deleteThread(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.threads.delete({ userId: 'me', ...payload });
+    }
+
+    public async getThread(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.threads.get({ userId: 'me', ...payload });
+    }
+
+    public async listThreads(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.threads.list({ userId: 'me', ...payload });
+    }
+
+    public async modifyThread(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.threads.modify({ userId: 'me', ...payload });
+    }
+
+    public async trashThread(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.threads.trash({ userId: 'me', ...payload });
+    }
+
+    public async untrashThread(tenantId: string, payload: any) {
+        await this.ensureConnected(tenantId);
+        return await corsair.withTenant(tenantId).gmail.api.threads.untrash({ userId: 'me', ...payload });
+    }
 }
 
-
-export default CorsairGmailServices
+export const corsairGmailService = new CorsairGmailServices();
+export default CorsairGmailServices;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,20 +11,52 @@ import {
   Edit3,
   MapPin,
   Trash2,
+  Loader2
 } from "lucide-react";
-import { calendarEvents, calendarHours, weekDays } from "~/lib/mock-data";
+import { calendarHours, weekDays } from "~/lib/mock-data";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { useToast } from "~/hooks/use-toast";
+import { usegetUser } from "~/hooks/api/auth/auth";
+import { useGetManyEvents, useDeleteEvent, useUpdateEvent } from "~/hooks/api/corsair/calendar";
+import { trpc } from "~/trpc/client";
 
 export function CalendarPage() {
   const { toast } = useToast();
+  const { user } = usegetUser();
+
+  const { getManyEventsAsync } = useGetManyEvents();
+
+  const { deleteEventAsync } = useDeleteEvent();
+  const { updateEventAsync } = useUpdateEvent();
+
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editTime, setEditTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
-  const [events, setEvents] = useState(calendarEvents);
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.isCalendarConnected) {
+      setIsLoading(true);
+      getManyEventsAsync({ maxResults: 50 }).then((res: any) => {
+        if (res?.items) {
+          const formatted = res.items.map((ev: any) => ({
+            id: ev.id,
+            title: ev.summary || "Untitled Event",
+            day: ev.start?.dateTime ? new Date(ev.start.dateTime).toLocaleDateString("en-US", { weekday: "short" }) : new Date(ev.start?.date || '').toLocaleDateString("en-US", { weekday: "short" }),
+            time: ev.start?.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "All Day",
+            endTime: ev.end?.dateTime ? new Date(ev.end.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "All Day",
+            type: ev.eventType || "recurring",
+            attendees: Array.isArray(ev.attendees) ? ev.attendees.map((a: any) => a.email || a) : [],
+          }));
+          setEvents(formatted);
+        }
+      }).catch(console.error).finally(() => setIsLoading(false));
+    }
+  }, [user?.isCalendarConnected]);
 
   const selected = events.find((e) => e.id === selectedEvent);
 
@@ -84,6 +116,8 @@ export function CalendarPage() {
     });
   };
 
+  const currentMonthYear = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+
   return (
     <div className="flex-1 flex h-full overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -92,7 +126,7 @@ export function CalendarPage() {
             <button className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors">
               <ChevronLeft className="w-4 h-4 text-muted-foreground" />
             </button>
-            <span className="text-sm font-semibold">January 2024</span>
+            <span className="text-sm font-semibold">{currentMonthYear}</span>
             <button className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors">
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -108,11 +142,30 @@ export function CalendarPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scroll">
-          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground pt-20">
-            <Clock className="w-8 h-8 mb-3 opacity-20" />
-            <p className="text-sm">No calendar events found</p>
-            <p className="text-xs opacity-70 mt-1">Connect your Google Calendar in the Integrations tab to see your schedule.</p>
-          </div>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground pt-20">
+              <Loader2 className="w-8 h-8 mb-3 animate-spin text-primary" />
+              <p className="text-sm">Loading events...</p>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground pt-20">
+              <Clock className="w-8 h-8 mb-3 opacity-20" />
+              <p className="text-sm">No calendar events found</p>
+              <p className="text-xs opacity-70 mt-1">Connect your Google Calendar in the Integrations tab to see your schedule.</p>
+            </div>
+          ) : (
+            <div className="p-4 space-y-2">
+              {events.map((e) => (
+                <div key={e.id} onClick={() => handleEventClick(e.id)} className={cn("p-4 border border-border/20 rounded-xl cursor-pointer hover:bg-secondary/20 transition-colors", selectedEvent === e.id && "bg-primary/5 border-primary/30")}>
+                  <div className="font-semibold text-sm">{e.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5" />
+                    {e.day}, {e.time} - {e.endTime}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

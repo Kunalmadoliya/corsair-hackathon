@@ -1,10 +1,7 @@
-"use client";
+import DashboardWrapperClient from "./dashboard-wrapper-client";
 
-import { Dashboard } from "~/components/spamurai/dashboard";
-import { useRouter } from "next/navigation";
+export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
-  const router = useRouter();
-  
-  return <Dashboard onBack={() => router.push("/")} />;
+  return <DashboardWrapperClient />;
 }

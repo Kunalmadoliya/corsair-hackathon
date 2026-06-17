@@ -1,16 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { Mail, Star, Archive, Trash2, Reply, Forward, Search, Filter, AlertTriangle, Check, X, Send } from 'lucide-react';
-import { emails } from '~/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { Mail, Settings, Bell, Search, Menu, Star, Archive, Trash, Clock, ArrowLeft, MoreVertical, Reply, Forward, Tag, Check, CheckCircle2, AlertTriangle, Trash2, X, Send, Filter, Loader2 } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { Button } from '~/components/ui/button';
 import { useToast } from '~/hooks/use-toast';
+import { usegetUser } from '~/hooks/api/auth/auth';
+import { useListMessages, useGetMessage } from '~/hooks/api/corsair/gmail';
 
 export function InboxPage() {
   const { toast } = useToast();
-  // Using an empty state for now until backend integration is ready
+  const { user } = usegetUser();
+
+  const { listMessagesAsync, isPending: isLoadingList } = useListMessages();
+  const { getMessageAsync } = useGetMessage();
+
   const [emailList, setEmailList] = useState<any[]>([]);
+  const [selectedEmailData, setSelectedEmailData] = useState<any>(null);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -18,6 +24,109 @@ export function InboxPage() {
   const [starredIds, setStarredIds] = useState<string[]>([]);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
+
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+
+  useEffect(() => {
+    if (user?.isGmailConnected) {
+      setIsFetchingDetails(true);
+      listMessagesAsync({ maxResults: 15 }).then(async (res) => {
+        if (res?.messages) {
+           const basicList = res.messages.map((m: any) => ({
+             id: m.id,
+             from: "Loading...",
+             subject: "Loading...",
+             preview: "Loading...",
+             time: "",
+             urgent: false
+           }));
+           setEmailList(basicList);
+
+           // Fetch details for each message
+           const fullEmails = await Promise.all(
+             res.messages.map(async (m: any) => {
+               try {
+                 const details = await getMessageAsync({ id: m.id, format: 'full' });
+                 const headers = details.payload?.headers || [];
+                 const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name)?.value || '';
+                 
+                 const fromHeader = getHeader('from');
+                 const from = fromHeader.split('<')[0].trim() || fromHeader;
+                 const subject = getHeader('subject') || 'No Subject';
+                 const dateHeader = getHeader('date');
+                 const time = dateHeader ? new Date(dateHeader).toLocaleDateString() : '';
+
+                 return {
+                   id: m.id,
+                   from,
+                   email: fromHeader,
+                   subject,
+                   preview: details.snippet || '',
+                   time,
+                   urgent: false,
+                   raw: details
+                 };
+               } catch (e) {
+                 return null;
+               }
+             })
+           );
+           setEmailList(fullEmails.filter(Boolean));
+        }
+      }).catch(console.error).finally(() => {
+        setIsFetchingDetails(false);
+      });
+    }
+  }, [user?.isGmailConnected]);
+
+  useEffect(() => {
+    if (selectedEmail) {
+      const email = emailList.find(e => e.id === selectedEmail);
+      if (email && email.raw) {
+         // Decode body robustly with UTF-8 support
+         const decodeBase64Utf8 = (base64: string) => {
+            try {
+                const binString = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+                const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
+                return new TextDecoder().decode(bytes);
+            } catch (e) {
+                return "";
+            }
+         };
+
+         let body = '';
+         
+         const extractBody = (payload: any): string => {
+             if (!payload) return "";
+             if (payload.mimeType === 'text/plain' && payload.body?.data) {
+                 return decodeBase64Utf8(payload.body.data);
+             }
+             if (payload.parts && payload.parts.length > 0) {
+                 // Try to find text/plain first
+                 for (const part of payload.parts) {
+                     if (part.mimeType === 'text/plain' && part.body?.data) {
+                         return decodeBase64Utf8(part.body.data);
+                     }
+                 }
+                 // If not found, recurse
+                 for (const part of payload.parts) {
+                     const extracted = extractBody(part);
+                     if (extracted) return extracted;
+                 }
+             }
+             if (payload.body?.data) {
+                 return decodeBase64Utf8(payload.body.data);
+             }
+             return "";
+         };
+
+         body = extractBody(email.raw.payload);
+         setSelectedEmailData({ ...email, body });
+      }
+    } else {
+      setSelectedEmailData(null);
+    }
+  }, [selectedEmail, emailList]);
 
   const visibleEmails = emailList.filter(e => !archivedIds.includes(e.id));
   const selected = visibleEmails.find(e => e.id === selectedEmail);
@@ -87,7 +196,12 @@ export function InboxPage() {
           <button className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors"><Filter className="w-4 h-4 text-muted-foreground" /></button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scroll">
-          {filtered.length === 0 ? (
+          {isLoadingList || isFetchingDetails ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
+              <Loader2 className="w-8 h-8 mb-3 animate-spin text-primary" />
+              <p className="text-sm">Loading emails...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
               <Mail className="w-8 h-8 mb-3 opacity-20" />
               <p className="text-sm">No emails found</p>
@@ -131,38 +245,38 @@ export function InboxPage() {
 
       {/* Email detail */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {selected ? (
+        {selectedEmailData ? (
           <>
             <div className="h-12 flex items-center justify-between px-4 border-b border-border/30 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold truncate">{selected.subject}</span>
+                <span className="text-sm font-semibold truncate">{selectedEmailData.subject}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="sm" className="h-8 px-3 text-sm" onClick={handleEdit}><Reply className="w-4 h-4 mr-1.5" />Reply</Button>
                 <Button variant="ghost" size="sm" className="h-8 px-3 text-sm" onClick={handleForward}><Forward className="w-4 h-4 mr-1.5" />Forward</Button>
-                <Button variant="ghost" size="sm" className="h-8 px-3 text-sm" onClick={() => handleArchive(selected.id)}><Archive className="w-4 h-4 mr-1.5" />Archive</Button>
-                <Button variant="ghost" size="sm" className="h-8 px-3 text-sm" onClick={() => handleStar(selected.id)}><Star className={cn('w-4 h-4 mr-1.5', starredIds.includes(selected.id) ? 'text-primary fill-primary' : '')} />Star</Button>
+                <Button variant="ghost" size="sm" className="h-8 px-3 text-sm" onClick={() => handleArchive(selectedEmailData.id)}><Archive className="w-4 h-4 mr-1.5" />Archive</Button>
+                <Button variant="ghost" size="sm" className="h-8 px-3 text-sm" onClick={() => handleStar(selectedEmailData.id)}><Star className={cn('w-4 h-4 mr-1.5', starredIds.includes(selectedEmailData.id) ? 'text-primary fill-primary' : '')} />Star</Button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto custom-scroll p-5">
               <div className="max-w-2xl">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary">{selected.from.split(' ').map((n: string) => n[0]).join('')}</div>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary">{selectedEmailData.from.split(' ').map((n: string) => n[0]).join('')}</div>
                   <div>
-                    <div className="text-sm font-semibold">{selected.from}</div>
-                    <div className="text-xs text-muted-foreground">{selected.email} &middot; {selected.time}</div>
+                    <div className="text-sm font-semibold">{selectedEmailData.from}</div>
+                    <div className="text-xs text-muted-foreground">{selectedEmailData.email} &middot; {selectedEmailData.time}</div>
                   </div>
-                  {selected.urgent && <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/15">Urgent</span>}
+                  {selectedEmailData.urgent && <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/15">Urgent</span>}
                 </div>
-                <div className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{selected.body}</div>
+                <div className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{selectedEmailData.body}</div>
               </div>
             </div>
 
             {isEditing && (
               <div className="border-t border-border/30 p-4 flex-shrink-0 animate-slide-up">
                 <div className="max-w-2xl">
-                  <div className="text-xs text-muted-foreground mb-2">Replying to {selected.from}</div>
+                  <div className="text-xs text-muted-foreground mb-2">Replying to {selectedEmailData.from}</div>
                   <textarea value={editContent} onChange={e => setEditContent(e.target.value)}
                     className="w-full h-28 bg-secondary/30 border border-border/40 rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/30 resize-none transition-colors"
                     placeholder="Write your reply..." />

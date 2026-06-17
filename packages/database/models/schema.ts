@@ -1,4 +1,5 @@
-import { pgTable, text, jsonb, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, jsonb, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { usersTable } from './user';
 
 export const corsairIntegrations = pgTable('corsair_integrations', {
     id: text('id').primaryKey(),
@@ -40,13 +41,59 @@ export const corsairEvents = pgTable('corsair_events', {
     status: text('status'),
 });
 
-// export const corsairPermissions = pgTable('corsair_permissions', {
-//     id: text('id').primaryKey(),
-//     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-//     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-//     token : text('token').notNull(),
-//     plugin  : jsonb('plugin').notNull(), 
-//     args : jsonb('args').notNull(), 
-//     tanant_id : text('tanant_id').notNull(), 
-//     expies
-// });
+// Platform Tables
+
+export const chatsTable = pgTable('chats', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const chatMessagesTable = pgTable('chat_messages', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    chatId: uuid('chat_id').notNull().references(() => chatsTable.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const userMemoryTable = pgTable('user_memory', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    value: jsonb('value').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const activityLogsTable = pgTable('activity_logs', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+    action: text('action').notNull(),
+    details: jsonb('details').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const syncedEmailsTable = pgTable('synced_emails', {
+    id: text('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+    threadId: text('thread_id'),
+    subject: text('subject'),
+    sender: text('sender'),
+    preview: text('preview'),
+    isRead: text('is_read').notNull().default('false'),
+    time: timestamp('time', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const syncedEventsTable = pgTable('synced_events', {
+    id: text('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    startTime: timestamp('start_time', { withTimezone: true }).notNull(),
+    endTime: timestamp('end_time', { withTimezone: true }).notNull(),
+    attendees: jsonb('attendees').notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

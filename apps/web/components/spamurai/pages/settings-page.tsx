@@ -5,42 +5,44 @@ import { User, Bell, Shield, Palette, Globe, Key, Check } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { Button } from '~/components/ui/button';
 import { useToast } from '~/hooks/use-toast';
+import { usegetUser } from '~/hooks/api/auth/auth';
+import { useTheme } from 'next-themes';
 
 const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'appearance', label: 'Appearance', icon: Palette },
-  { id: 'integrations', label: 'Integrations', icon: Globe },
   { id: 'api', label: 'API Keys', icon: Key },
 ];
 
 export function SettingsPage() {
   const { toast } = useToast();
+  const { user } = usegetUser();
   const [activeTab, setActiveTab] = useState('profile');
-  const [name, setName] = useState('Kenji Tanaka');
-  const [email, setEmail] = useState('kenji@spamurai.io');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [notifications, setNotifications] = useState({ email: true, slack: true, desktop: false });
   const [isLightTheme, setIsLightTheme] = useState(false);
 
+  useEffect(() => {
+      if (user) {
+          setName(user.fullname || '');
+          setEmail(user.email || '');
+      }
+  }, [user]);
+
+  const { theme, setTheme } = useTheme();
+  
   // Apply theme class to html element, but initialize from current DOM state
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      setIsLightTheme(document.documentElement.classList.contains('light'));
-    }
-  }, []);
+    setIsLightTheme(theme === 'light');
+  }, [theme]);
 
   const handleThemeToggle = () => {
     const nextTheme = !isLightTheme;
     setIsLightTheme(nextTheme);
-    const html = document.documentElement;
-    if (nextTheme) {
-      html.classList.remove('dark');
-      html.classList.add('light');
-    } else {
-      html.classList.remove('light');
-      html.classList.add('dark');
-    }
+    setTheme(nextTheme ? 'light' : 'dark');
     toast({ description: `Switched to ${nextTheme ? 'light' : 'dark'} theme` });
   };
 
@@ -74,14 +76,16 @@ export function SettingsPage() {
               <div className="rounded-xl border border-border/40 bg-card p-6 space-y-5">
                 <h3 className="text-base font-semibold">Profile Information</h3>
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-lg font-bold text-primary">KT</div>
+                  <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-lg font-bold text-primary">
+                    {name ? name.substring(0, 2).toUpperCase() : 'U'}
+                  </div>
                   <Button variant="outline" size="sm" className="text-sm" onClick={() => toast({ description: 'Avatar upload coming soon' })}>Change Avatar</Button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className="text-xs text-muted-foreground block mb-1">Full Name</label><input value={name} onChange={e => setName(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
-                  <div><label className="text-xs text-muted-foreground block mb-1">Email</label><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Email</label><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" disabled /></div>
                 </div>
-                <div><label className="text-xs text-muted-foreground block mb-1">Role</label><input defaultValue="Product Manager" className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Role</label><input defaultValue="User" className="w-full bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/30 transition-colors" /></div>
                 <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 btn-hover" onClick={handleSave}>Save Changes</Button>
               </div>
             )}
@@ -138,22 +142,6 @@ export function SettingsPage() {
               </div>
             )}
 
-            {activeTab === 'integrations' && (
-              <div className="rounded-xl border border-border/40 bg-card p-6 space-y-4">
-                <h3 className="text-base font-semibold">Connected Services</h3>
-                {['Gmail',  'Google Calendar',].map(name => {
-                  const connected = name === 'Gmail' || name === 'Slack' || name === 'Google Calendar';
-                  return (
-                    <div key={name} className="flex items-center justify-between py-2 border-b border-border/15">
-                      <span className="text-sm text-foreground/75">{name}</span>
-                      <Button variant={connected ? 'ghost' : 'outline'} size="sm" className={cn('text-xs', connected && 'text-primary')} onClick={() => toast({ description: connected ? `Disconnect ${name}?` : `Connecting ${name}...` })}>
-                        {connected ? 'Connect' : 'Connect'}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
 
             {activeTab === 'api' && (
               <div className="rounded-xl border border-border/40 bg-card p-6 space-y-5">

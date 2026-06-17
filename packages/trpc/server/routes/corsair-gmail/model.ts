@@ -1,8 +1,7 @@
-import { z } from "zod"
-
+import { z } from "zod";
 
 export const connectGmailInputType = z.object({
-    id: z.string()
+    id: z.string().optional()
 })
 
 export const connectGmailOutputType = z.object({
@@ -18,10 +17,5 @@ export const gmailCallbackOutputType = z.object({
     url: z.string()
 })
 
-export const readGmailInputType = z.object({
-    id: z.string()
-})
-
-export const readGmailOutputType = z.object({
-    inboxes: z.object()
-})
+// Export everything from the service models for convenience
+export * from "@repo/services/corsair/gmail/model";
