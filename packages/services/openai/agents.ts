@@ -1,5 +1,7 @@
 import { Agent, run, tool } from '@openai/agents';
+import { z } from 'zod';
 import { corsair } from '../corsair';
+import { corsairGmailService } from '../corsair/gmail';
 
 import { OpenAIAgentInputSchemaType } from './model';
 
@@ -98,6 +100,81 @@ class OpenAiChats {
     const tenantCorsair = corsair.withTenant(tenantId);
     const tools = provider.build({ corsair: tenantCorsair, tool });
 
+    const smartListMessages = tool({
+      name: 'smartListMessages',
+      description: 'Fetch the latest emails from the inbox, including full content and metadata, optimized for summarization. Use this tool whenever the user asks to see their latest emails or inbox instead of the default listMessages tool.',
+      parameters: z.object({
+        limit: z.number().max(20).default(10).describe('Number of recent emails to fetch'),
+      }),
+      execute: async ({ limit }) => {
+        try {
+          const listRes = await corsairGmailService.listMessages(tenantId, { maxResults: limit });
+          const messages = listRes?.messages || [];
+          if (messages.length === 0) return { result: "No emails found." };
+
+          const fullMessages = await Promise.all(
+            messages.map((m: any) => 
+              corsairGmailService.getMessage(tenantId, { id: m.id, format: "full" })
+            )
+          );
+
+          const structuredEmails = fullMessages.map((msg: any) => {
+            const headers = msg.payload?.headers || [];
+            const getHeader = (name: string) => headers.find((h: any) => h.name?.toLowerCase() === name.toLowerCase())?.value || '';
+
+            const subject = getHeader('subject');
+            const from = getHeader('from');
+            const to = getHeader('to');
+            const date = getHeader('date');
+
+            let bodyText = msg.snippet || '';
+
+            const extractBody = (part: any): string => {
+                if (part.mimeType === 'text/plain' && part.body?.data) {
+                    return Buffer.from(part.body.data, 'base64url').toString('utf-8');
+                }
+                if (part.parts) {
+                    for (const p of part.parts) {
+                        if (p.mimeType === 'text/plain' && p.body?.data) {
+                            return Buffer.from(p.body.data, 'base64url').toString('utf-8');
+                        }
+                    }
+                    for (const p of part.parts) {
+                        const extracted = extractBody(p);
+                        if (extracted) return extracted;
+                    }
+                }
+                if (part.body?.data) {
+                    return Buffer.from(part.body.data, 'base64url').toString('utf-8');
+                }
+                return '';
+            };
+
+            const fullBody = extractBody(msg.payload);
+            if (fullBody && fullBody.length > bodyText.length) {
+                bodyText = fullBody.replace(/<[^>]*>?/gm, '').replace(/\\s+/g, ' ').trim().substring(0, 1500);
+            }
+
+            return {
+              id: msg.id,
+              threadId: msg.threadId,
+              subject,
+              sender: from,
+              recipient: to,
+              date,
+              contentPreview: bodyText || 'No content available'
+            };
+          });
+
+          return { result: structuredEmails };
+        } catch (error: any) {
+          return { error: error.message };
+        }
+      }
+    });
+
+    tools.push(smartListMessages);
+
     const agent = new Agent({
       name: 'corsair-agent',
       instructions: `You are Corsair, an advanced AI communications and scheduling companion. 
@@ -105,6 +182,11 @@ You have access to the user's Gmail and Google Calendar via the Corsair tools. U
 
 User Context/Memory:
 ${message.memorySummary ? message.memorySummary : "No memory context available."}
+
+Previous Chat History:
+${message.chatHistory && message.chatHistory.length > 0 
+  ? message.chatHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')
+  : "No previous messages in this chat."}
 
 Guidelines:
 1. Always be helpful, concise, and professional.
@@ -114,8 +196,23 @@ Guidelines:
 Since the UI parses text, structure your response carefully.
 
 Format rules:
-- Present information clearly.
-- If you did actions, state them.
+- YOU MUST USE CLEAN, PROFESSIONAL MARKDOWN for all responses.
+- Use bullet points, bold text, and line breaks to organize information clearly.
+- NEVER dump raw IDs (like email thread IDs or calendar event IDs) to the user unless explicitly requested.
+- When summarizing emails, ALWAYS use the 'smartListMessages' tool to fetch the full content context.
+- For each email summary, extract and clearly display the Sender, Subject, Date, a 1-2 sentence AI-generated Summary, Action Items (if any), and Priority Level (High/Medium/Low). 
+- Example format for emails:
+  📧 **Subject: Interview Invitation**
+  👤 From: Google Careers
+  📅 Date: Jun 18, 2026
+  📝 **Summary:** Google has invited you to schedule a technical interview.
+  ⚡ **Action Items:** 
+  • Select interview slot
+  • Confirm attendance
+  🔥 **Priority:** High
+
+- When listing calendar events, show the Date, Time, Title, and Attendees cleanly.
+- If you performed actions (like sending an email or creating an event), state them clearly at the end of your response.
 - When sending emails using the Gmail API tool (e.g., sendMessage), the tool requires a 'raw' parameter. This parameter MUST be a base64url encoded string of the full MIME message. First, construct the email in plain text: "To: recipient@example.com\nSubject: Your Subject\nContent-Type: text/plain; charset=UTF-8\n\nYour message body". Then, base64url encode this entire string and pass it as the 'raw' argument.
 - When creating or updating calendar events using the Google Calendar API tools, you MUST pass flat parameters like \`title\`, \`start\`, \`end\`, \`description\`, and \`attendees\` directly in the tool arguments. Do not wrap them in \`requestBody\` or \`event\`.`,
       tools,

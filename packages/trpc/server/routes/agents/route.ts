@@ -28,10 +28,22 @@ export const openaiagentsRouter = router({
           // Persist user message
           await chatService.addMessage(activeChatId, "user", message);
 
+          let chatHistory: Array<{role: string, content: string}> = [];
+          
+          if (chatId) {
+             try {
+                const { messages } = await chatService.getChat(ctx.user.id, chatId);
+                // Get the last 10 messages for context, excluding the current one we just added
+                chatHistory = messages.slice(-11, -1).map(m => ({ role: m.role, content: m.content }));
+             } catch(e) {
+                console.error("Could not fetch chat history", e);
+             }
+          }
+
           // Get memory context
           const memorySummary = await memoryService.getSummary(ctx.user.id);
 
-          const result = await openAiChats.agentsFunctionallity({ message, memorySummary }, ctx.user.id);
+          const result = await openAiChats.agentsFunctionallity({ message, memorySummary, chatHistory }, ctx.user.id);
 
           if (result) {
             // Persist assistant message

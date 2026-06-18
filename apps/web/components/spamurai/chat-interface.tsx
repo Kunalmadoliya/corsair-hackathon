@@ -266,10 +266,13 @@ export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfacePro
             <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
               <span className="text-[10px] font-bold text-primary">AI</span>
             </div>
-            <div className="flex items-center gap-1.5 px-4 py-3 bg-card border border-border/40 rounded-xl">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="flex items-center gap-2 px-4 py-3 bg-card border border-border/40 rounded-xl">
+              <span className="text-sm text-muted-foreground animate-pulse font-medium">AI is thinking...</span>
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
           </div>
         )}
