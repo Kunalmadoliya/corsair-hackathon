@@ -168,20 +168,20 @@ export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfacePro
   };
 
   return (
-    <div className="flex-1 flex h-full min-w-0">
+    <div className="flex-1 flex h-full min-w-0 bg-background">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full min-w-0">
-        <div className="flex-1 overflow-y-auto custom-scroll px-6 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto custom-scroll px-4 md:px-8 py-8 space-y-8">
         {messages.map(msg => (
-          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+          <div key={msg.id} className={`flex gap-4 w-full max-w-3xl mx-auto ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-[10px] font-bold text-primary">AI</span>
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+                <Zap className="w-4 h-4 text-primary-foreground" />
               </div>
             )}
-            <div className="max-w-lg space-y-3">
-              <div className={`rounded-xl px-4 py-3 ${msg.role === 'user' ? 'bg-primary/8 border border-primary/12 text-foreground/90' : 'bg-card border border-border/40'}`}>
-                <p className="text-sm leading-relaxed">{msg.content}</p>
+            <div className={`max-w-[85%] space-y-3 ${msg.role === 'user' ? 'order-1' : ''}`}>
+              <div className={`px-5 py-3.5 ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm shadow-sm' : 'text-foreground'}`}>
+                <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
               </div>
 
               {msg.actions && (
@@ -275,25 +275,19 @@ export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfacePro
                 </div>
               )}
             </div>
-            {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-[10px] font-semibold text-foreground/60">You</span>
-              </div>
-            )}
           </div>
         ))}
 
         {isProcessing && (
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-primary">AI</span>
+          <div className="flex gap-4 w-full max-w-3xl mx-auto">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+              <Zap className="w-4 h-4 text-primary-foreground" />
             </div>
-            <div className="flex items-center gap-2 px-4 py-3 bg-card border border-border/40 rounded-xl">
-              <span className="text-sm text-muted-foreground animate-pulse font-medium">AI is thinking...</span>
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="flex items-center gap-2 px-2 py-3">
+              <div className="flex gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -302,11 +296,11 @@ export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfacePro
       </div>
 
       {messages.length <= 2 && (
-        <div className="px-6 pb-3">
-          <div className="flex flex-wrap gap-2">
+        <div className="w-full max-w-3xl mx-auto px-4 pb-4">
+          <div className="flex flex-wrap gap-2 justify-center">
             {suggestedActions.map(a => (
               <button key={a.label} onClick={() => handleSubmit(a.label)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/30 text-sm text-foreground/70 hover:bg-secondary hover:border-border/50 transition-all hover:scale-[1.02]">
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-secondary/60 border border-border/40 text-sm text-foreground/80 hover:bg-secondary hover:border-border/60 transition-all hover:scale-[1.02]">
                 {a.label}
               </button>
             ))}
@@ -314,21 +308,30 @@ export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfacePro
         </div>
       )}
 
-      <div className="border-t border-border/30 px-5 py-3 flex-shrink-0">
-        <div className="flex items-center gap-3 max-w-2xl mx-auto">
-          <div className="flex-1 flex items-center gap-2 bg-secondary/40 border border-border/35 rounded-xl px-4 py-2.5 focus-within:border-primary/25 transition-all">
-            <input type="text" value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(input); } }}
-              placeholder="Tell Spamurai what you need..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none" />
-            <button className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
-            <button className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors"><Mic className="w-4 h-4 text-muted-foreground" /></button>
+      <div className="w-full max-w-3xl mx-auto px-4 pb-6 pt-2">
+        <div className="flex flex-col gap-2 relative bg-card border border-border/50 shadow-sm rounded-2xl p-2 focus-within:border-primary/30 focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+          <textarea 
+            value={input} 
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(input); } }}
+            placeholder="Ask Corsair anything..." 
+            className="w-full bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none min-h-[44px] max-h-48 py-3 px-3 custom-scroll" 
+            rows={1}
+          />
+          <div className="flex items-center justify-between px-1 pb-1">
+            <div className="flex items-center gap-1">
+              <button className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground"><Paperclip className="w-4 h-4" /></button>
+              <button className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground"><Mic className="w-4 h-4" /></button>
+            </div>
+            <button onClick={() => handleSubmit(input)} disabled={!input.trim() || isProcessing}
+              className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+              <Send className="w-4 h-4 ml-0.5" />
+            </button>
           </div>
-          <button onClick={() => handleSubmit(input)} disabled={!input.trim() || isProcessing}
-            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 btn-hover disabled:opacity-25 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
-            <Send className="w-4 h-4" />
-          </button>
         </div>
-        <div className="text-center mt-1.5 text-xs text-muted-foreground/40">Enter to send &middot; /email /calendar /search /workflow</div>
+        <div className="text-center mt-3 text-xs text-muted-foreground/60">
+          Corsair can make mistakes. Consider verifying important information.
+        </div>
       </div>
       </div>
     </div>

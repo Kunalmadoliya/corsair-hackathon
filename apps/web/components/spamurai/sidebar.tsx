@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  LayoutDashboard, Inbox, Calendar, GitBranch, BarChart3, Settings,
-  ChevronLeft, ChevronRight, MessageSquare, Plus, LogOut, User as UserIcon, Globe
+  LayoutDashboard, Inbox, Calendar, Settings,
+  ChevronLeft, ChevronRight, MessageSquare, Plus, LogOut, Globe, Sun, Moon
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '~/lib/utils';
@@ -11,14 +11,15 @@ import { useListMessages } from '~/hooks/api/corsair/gmail';
 import { usegetUser } from '~/hooks/api/auth/auth';
 import { trpc } from '~/trpc/client';
 
-export type PageId = 'dashboard' | 'inbox' | 'calendar' | 'workflows' | 'analytics' | 'settings' | 'integrations';
+import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
+
+export type PageId = 'dashboard' | 'inbox' | 'calendar' | 'settings' | 'integrations';
 
 const navItemsBase: { icon: React.ElementType; label: string; id: PageId; badge?: string }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
   { icon: Inbox, label: 'Inbox', id: 'inbox' },
   { icon: Calendar, label: 'Calendar', id: 'calendar' },
-  { icon: GitBranch, label: 'Workflows', id: 'workflows' },
-  { icon: BarChart3, label: 'Analytics', id: 'analytics' },
   { icon: Globe, label: 'Integrations', id: 'integrations' },
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
@@ -37,6 +38,19 @@ export function Sidebar({ activePage, onNavigate, chatId, onChatSelect, onNewCha
   const { listMessagesAsync } = useListMessages();
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
   
+  const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const { mutateAsync: logoutUser } = trpc.auth.logoutUser.useMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser({});
+      router.push('/auth/login');
+    } catch (e) {
+      console.error('Logout failed', e);
+    }
+  };
+
   const { data: chatHistory } = trpc.chat.listChats.useQuery({}, {
     enabled: !!user?.isGmailConnected
   });
@@ -108,8 +122,18 @@ export function Sidebar({ activePage, onNavigate, chatId, onChatSelect, onNewCha
 
       {/* User Corner */}
       {!collapsed && user && (
-        <div className="p-3 border-t border-border/30 mt-auto flex-shrink-0">
-          <div className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-secondary transition-colors cursor-pointer">
+        <div className="p-3 border-t border-border/30 mt-auto flex-shrink-0 space-y-2">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Toggle Theme">
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button onClick={handleLogout} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors" title="Log Out">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-secondary/30 border border-border/20">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs flex-shrink-0">
               {user.fullname ? user.fullname.substring(0, 2).toUpperCase() : 'U'}
             </div>

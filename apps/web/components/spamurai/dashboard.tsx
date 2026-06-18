@@ -6,8 +6,6 @@ import { ChatInterface } from './chat-interface';
 import { CommandBar } from './command-bar';
 import { InboxPage } from './pages/inbox-page';
 import { CalendarPage } from './pages/calendar-page';
-import { WorkflowsPage } from './pages/workflows-page';
-import { AnalyticsPage } from './pages/analytics-page';
 import { SettingsPage } from './pages/settings-page';
 import { IntegrationsPage } from './pages/integrations-page';
 import { Logo } from './logo';
@@ -120,7 +118,7 @@ export function Dashboard({ onBack }: DashboardProps) {
 
   const handleCommand = (command: string) => {
     const key = command.replace('/', '') as PageId;
-    const valid: PageId[] = ['dashboard', 'inbox', 'calendar', 'workflows', 'analytics', 'settings', 'integrations'];
+    const valid: PageId[] = ['dashboard', 'inbox', 'calendar', 'settings', 'integrations'];
     if (valid.includes(key)) setActivePage(key);
   };
 
@@ -168,26 +166,8 @@ export function Dashboard({ onBack }: DashboardProps) {
           )}
           {activePage === 'dashboard' && (
             user.isGmailConnected ? (
-              <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Welcome back, {user.fullname?.split(' ')[0] || 'User'}</h2>
-                    <p className="text-muted-foreground mt-1">Here is what is happening today.</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-5 rounded-2xl border border-border/40 bg-card/50 shadow-sm space-y-4">
-                      <div className="flex items-center gap-2 text-primary font-semibold"><Mail className="w-4 h-4"/> Recent Emails</div>
-                      <p className="text-sm text-muted-foreground">Check your inbox for new messages and AI summaries.</p>
-                      <Button variant="outline" size="sm" onClick={() => setActivePage('inbox')}>View Inbox</Button>
-                    </div>
-                    <div className="p-5 rounded-2xl border border-border/40 bg-card/50 shadow-sm space-y-4">
-                      <div className="flex items-center gap-2 text-primary font-semibold"><CalendarIcon className="w-4 h-4"/> Schedule</div>
-                      <p className="text-sm text-muted-foreground">Manage your upcoming meetings and events.</p>
-                      <Button variant="outline" size="sm" onClick={() => setActivePage('calendar')}>View Calendar</Button>
-                    </div>
-                  </div>
-                </div>
-                <div className="w-full lg:w-[450px] xl:w-[500px] border-l border-border/30 bg-background flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]">
+              <div className="flex-1 flex overflow-hidden bg-background">
+                <div className="flex-1 flex flex-col w-full h-full max-w-5xl mx-auto">
                   <ChatInterface chatId={chatId} setChatId={setChatId} onNewChat={handleNewChat} />
                 </div>
               </div>
@@ -195,8 +175,6 @@ export function Dashboard({ onBack }: DashboardProps) {
           )}
           {activePage === 'inbox' && <InboxPage />}
           {activePage === 'calendar' && <CalendarPage />}
-          {activePage === 'workflows' && <WorkflowsPage />}
-          {activePage === 'analytics' && <AnalyticsPage />}
           {activePage === 'settings' && <SettingsPage />}
           {activePage === 'integrations' && <IntegrationsPage />}
         </div>
