@@ -22,7 +22,7 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
 
 app.use(
   cors({
-    origin: true,
+    origin: env.WEB_URL,
     credentials: true,
   }),
 );
