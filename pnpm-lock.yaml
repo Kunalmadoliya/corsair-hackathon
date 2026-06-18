@@ -14,6 +14,9 @@ importers:
 
   .:
     dependencies:
+      '@tailwindcss/oxide-win32-x64-msvc':
+        specifier: 4.3.1
+        version: 4.3.1
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -185,7 +188,7 @@ importers:
         specifier: ^0.13.10
         version: 0.13.11(typescript@5.9.2)(zod@4.4.3)
       '@tailwindcss/postcss':
-        specifier: ^4.1.18
+        specifier: ^4.3.1
         version: 4.3.1
       '@tanstack/react-query':
         specifier: ^5.90.16
@@ -257,7 +260,7 @@ importers:
         specifier: ^3.4.0
         version: 3.6.0
       tailwindcss:
-        specifier: ^4.1.18
+        specifier: ^4.3.1
         version: 4.3.1
       vaul:
         specifier: ^1.1.2
@@ -8351,8 +8354,7 @@ snapshots:
   '@tailwindcss/oxide-win32-arm64-msvc@4.3.1':
     optional: true
 
-  '@tailwindcss/oxide-win32-x64-msvc@4.3.1':
-    optional: true
+  '@tailwindcss/oxide-win32-x64-msvc@4.3.1': {}
 
   '@tailwindcss/oxide@4.3.1':
     optionalDependencies:
