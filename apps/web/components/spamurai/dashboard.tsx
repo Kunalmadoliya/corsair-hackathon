@@ -44,6 +44,24 @@ function UnreadBadge() {
   );
 }
 
+function GlobalConnectionStatus() {
+  const { user } = usegetUser();
+  if (!user) return null;
+  return (
+    <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/20">
+      <div className="flex items-center gap-1.5" title={user.isGmailConnected ? "Gmail Connected" : "Gmail Disconnected"}>
+         <div className={`w-2 h-2 rounded-full ${user.isGmailConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+         <span className="text-xs font-medium text-muted-foreground">Gmail</span>
+      </div>
+      <div className="w-px h-3 bg-border/50" />
+      <div className="flex items-center gap-1.5" title={user.isCalendarConnected ? "Calendar Connected" : "Calendar Disconnected"}>
+         <div className={`w-2 h-2 rounded-full ${user.isCalendarConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+         <span className="text-xs font-medium text-muted-foreground">Calendar</span>
+      </div>
+    </div>
+  );
+}
+
 interface DashboardProps { onBack?: () => void; }
 
 function GmailNotConnectedBanner({ onGoToIntegrations }: { onGoToIntegrations: () => void }) {
@@ -119,6 +137,7 @@ export function Dashboard({ onBack }: DashboardProps) {
           <Logo size="sm" />
         </div>
         <div className="flex items-center gap-2.5">
+          <GlobalConnectionStatus />
           <button onClick={() => setCommandBarOpen(true)}
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/30 text-sm text-muted-foreground hover:border-border/50 transition-colors">
             <Command className="w-3 h-3" />Command <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-background text-muted-foreground ml-1">⌘K</kbd>
@@ -148,9 +167,31 @@ export function Dashboard({ onBack }: DashboardProps) {
             </div>
           )}
           {activePage === 'dashboard' && (
-            user.isGmailConnected
-              ? <ChatInterface chatId={chatId} setChatId={setChatId} onNewChat={handleNewChat} />
-              : <GmailNotConnectedBanner onGoToIntegrations={() => setActivePage('integrations')} />
+            user.isGmailConnected ? (
+              <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Welcome back, {user.fullname?.split(' ')[0] || 'User'}</h2>
+                    <p className="text-muted-foreground mt-1">Here is what is happening today.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-5 rounded-2xl border border-border/40 bg-card/50 shadow-sm space-y-4">
+                      <div className="flex items-center gap-2 text-primary font-semibold"><Mail className="w-4 h-4"/> Recent Emails</div>
+                      <p className="text-sm text-muted-foreground">Check your inbox for new messages and AI summaries.</p>
+                      <Button variant="outline" size="sm" onClick={() => setActivePage('inbox')}>View Inbox</Button>
+                    </div>
+                    <div className="p-5 rounded-2xl border border-border/40 bg-card/50 shadow-sm space-y-4">
+                      <div className="flex items-center gap-2 text-primary font-semibold"><CalendarIcon className="w-4 h-4"/> Schedule</div>
+                      <p className="text-sm text-muted-foreground">Manage your upcoming meetings and events.</p>
+                      <Button variant="outline" size="sm" onClick={() => setActivePage('calendar')}>View Calendar</Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full lg:w-[450px] xl:w-[500px] border-l border-border/30 bg-background flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]">
+                  <ChatInterface chatId={chatId} setChatId={setChatId} onNewChat={handleNewChat} />
+                </div>
+              </div>
+            ) : <GmailNotConnectedBanner onGoToIntegrations={() => setActivePage('integrations')} />
           )}
           {activePage === 'inbox' && <InboxPage />}
           {activePage === 'calendar' && <CalendarPage />}

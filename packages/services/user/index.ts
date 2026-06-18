@@ -67,7 +67,7 @@ class UserService {
 
   private async generateJwtToken(id: string) {
     return jwt.sign({ id }, env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "7d",
     });
   }
 
@@ -205,6 +205,7 @@ class UserService {
           profileImageUrl: usersTable.profileImageUrl,
           isGmailConnected: usersTable.isGmailConnected,
           isCalendarConnected: usersTable.isCalendarConnected,
+          isDemoMode: usersTable.isDemoMode,
         })
         .from(usersTable)
         .where(eq(usersTable.id, id));
@@ -220,6 +221,7 @@ class UserService {
         profileImageUrl: result[0].profileImageUrl,
         isGmailConnected: result[0].isGmailConnected,
         isCalendarConnected: result[0].isCalendarConnected,
+        isDemoMode: result[0].isDemoMode,
       };
     } catch (error) {
       console.error(error);

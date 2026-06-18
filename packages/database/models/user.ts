@@ -42,6 +42,7 @@ export const usersTable = pgTable("users", {
 
   isGmailConnected: boolean("is_gmail_connected").default(false).notNull(),
   isCalendarConnected: boolean("is_calendar_connected").default(false).notNull(),
+  isDemoMode: boolean("is_demo_mode").default(false).notNull(),
 
   profileImageUrl: text("profile_image_url"),
 

@@ -1,3 +1,4 @@
+import type {} from "@trpc/server";
 import { z, zodUndefinedModel } from "../../schema";
 import { userService } from "../../services";
 import {
@@ -80,7 +81,7 @@ export const authRouter = router({
         httpOnly: true,
         secure: env.NODE_ENV === "production" || env.NODE_ENV === "prod",
         sameSite: env.NODE_ENV === "production" || env.NODE_ENV === "prod" ? "none" : "lax",
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
         path: "/"
       })
 
@@ -102,7 +103,7 @@ export const authRouter = router({
         httpOnly: true,
         secure: env.NODE_ENV === "production" || env.NODE_ENV === "prod",
         sameSite: env.NODE_ENV === "production" || env.NODE_ENV === "prod" ? "none" : "lax",
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
         path: "/"
       })
 
@@ -127,9 +128,9 @@ export const authRouter = router({
     .input(getUserWithTokenInputModel)
     .output(getUserWithTokenOutputModel)
     .query(async ({ ctx }) => {
-      const { id, email, fullname, profileImageUrl, isGmailConnected, isCalendarConnected } =
+      const { id, email, fullname, profileImageUrl, isGmailConnected, isCalendarConnected, isDemoMode } =
         await userService.getMe(ctx.user.id)
-      return { id, email, fullname, profileImageUrl, isGmailConnected, isCalendarConnected }
+      return { id, email, fullname, profileImageUrl, isGmailConnected, isCalendarConnected, isDemoMode }
     }),
 
 

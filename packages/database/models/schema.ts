@@ -97,3 +97,13 @@ export const syncedEventsTable = pgTable('synced_events', {
     attendees: jsonb('attendees').notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const analyticsTable = pgTable('analytics', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+    date: timestamp('date', { withTimezone: true }).notNull().defaultNow(),
+    emailsRead: text('emails_read').notNull().default('0'),
+    emailsSent: text('emails_sent').notNull().default('0'),
+    eventsCreated: text('events_created').notNull().default('0'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

@@ -40,32 +40,6 @@ class CorsairCalendarService {
 
         const tenantId = calendarResult.tenantId;
 
-        try {
-            const internalCfg = (corsair as any)[
-                Object.getOwnPropertySymbols(corsair).find(s => s.description === 'corsair_internal_config') as symbol
-            ];
-            const kek = internalCfg?.encryptionKey;
-            const database = internalCfg?.database;
-
-            if (kek && database) {
-                const calendarKeyManager = createAccountKeyManager({
-                    authType: "oauth_2",
-                    integrationName: "googlecalendar",
-                    tenantId,
-                    kek,
-                    database,
-                });
-                
-                const accessToken = await calendarKeyManager.get_access_token();
-
-                if (accessToken) {
-                    await setupCorsair(corsair, { tenantId });
-                }
-            }
-        } catch (err) {
-            console.warn("[corsair] Calendar token fetch failed (non-fatal):", err);
-        }
-
         await db
             .update(usersTable)
             .set({ isCalendarConnected: true })
@@ -81,106 +55,27 @@ class CorsairCalendarService {
 
     public async createEvent(tenantId: string, payload: any) {
         await this.ensureConnected(tenantId);
-        const hasAttendees = payload.attendees && payload.attendees.length > 0;
-        return await corsair.withTenant(tenantId).googlecalendar.api.events.create({
-            calendarId: payload.calendarId || 'primary',
-            sendUpdates: hasAttendees ? 'all' : 'none',
-            ...(payload.addMeetLink ? { conferenceDataVersion: 1 } : {}),
-            event: payload.event ? payload.event : {
-                summary: payload.title || payload.summary,
-                ...(payload.description ? { description: payload.description } : {}),
-                ...(payload.location ? { location: payload.location } : {}),
-                start: payload.start?.dateTime ? payload.start : { dateTime: new Date(payload.start).toISOString() },
-                end: payload.end?.dateTime ? payload.end : { dateTime: new Date(payload.end).toISOString() },
-                ...(hasAttendees ? { attendees: payload.attendees.map((email: string) => typeof email === 'string' ? { email } : email) } : {}),
-                ...(payload.colorId ? { colorId: payload.colorId } : {}),
-                ...(payload.recurrence ? { recurrence: payload.recurrence } : {}),
-                ...(payload.addMeetLink ? {
-                    conferenceData: {
-                        createRequest: {
-                            requestId: Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
-                            conferenceSolutionKey: { type: 'hangoutsMeet' }
-                        }
-                    }
-                } : {})
-            }
-        });
+        return await corsair.withTenant(tenantId).googlecalendar.api.events.create(payload);
     }
 
     public async deleteEvent(tenantId: string, payload: any) {
         await this.ensureConnected(tenantId);
-        return await corsair.withTenant(tenantId).googlecalendar.api.events.delete({
-            calendarId: payload.calendarId || 'primary',
-            sendUpdates: 'all',
-            ...payload
-        });
+        return await corsair.withTenant(tenantId).googlecalendar.api.events.delete(payload);
     }
 
     public async getEvent(tenantId: string, payload: any) {
         await this.ensureConnected(tenantId);
-        return await corsair.withTenant(tenantId).googlecalendar.api.events.get({
-            calendarId: payload.calendarId || 'primary',
-            ...payload
-        });
+        return await corsair.withTenant(tenantId).googlecalendar.api.events.get(payload);
     }
 
     public async getManyEvents(tenantId: string, payload: any) {
         await this.ensureConnected(tenantId);
-        const queryParamsBase = {
-            singleEvents: true,
-            orderBy: 'startTime' as const,
-            maxResults: 250,
-            timeMin: payload.timeMin || new Date().toISOString(),
-            ...(payload.timeMax ? { timeMax: payload.timeMax } : {})
-        };
-        const data = await corsair.withTenant(tenantId).googlecalendar.api.events.getMany({
-            calendarId: payload.calendarId || 'primary',
-            ...queryParamsBase,
-            ...payload
-        });
-        const rawEvents = data.items || [];
-        return rawEvents.map((e: any) => ({
-            id: e.id,
-            title: e.summary || '(No Title)',
-            start: e.start?.dateTime || e.start?.date || new Date().toISOString(),
-            end: e.end?.dateTime || e.end?.date,
-            description: e.description || '',
-            location: e.location || '',
-            status: e.status || 'confirmed',
-            attendees: e.attendees || [],
-            htmlLink: e.htmlLink || '',
-            colorId: e.colorId || null,
-            hangoutLink: e.hangoutLink || ''
-        }));
+        return await corsair.withTenant(tenantId).googlecalendar.api.events.getMany(payload);
     }
 
     public async updateEvent(tenantId: string, payload: any) {
         await this.ensureConnected(tenantId);
-        const hasAttendees = payload.attendees && payload.attendees.length > 0;
-        return await corsair.withTenant(tenantId).googlecalendar.api.events.update({
-            calendarId: payload.calendarId || 'primary',
-            id: payload.id || payload.eventId,
-            sendUpdates: hasAttendees ? 'all' : 'none',
-            ...(payload.addMeetLink ? { conferenceDataVersion: 1 } : {}),
-            event: payload.event ? payload.event : {
-                summary: payload.title || payload.summary,
-                ...(payload.description ? { description: payload.description } : {}),
-                ...(payload.location ? { location: payload.location } : {}),
-                start: payload.start?.dateTime ? payload.start : { dateTime: new Date(payload.start).toISOString() },
-                end: payload.end?.dateTime ? payload.end : { dateTime: new Date(payload.end).toISOString() },
-                ...(hasAttendees ? { attendees: payload.attendees.map((email: string) => typeof email === 'string' ? { email } : email) } : {}),
-                ...(payload.colorId ? { colorId: payload.colorId } : {}),
-                ...(payload.recurrence ? { recurrence: payload.recurrence } : {}),
-                ...(payload.addMeetLink ? {
-                    conferenceData: {
-                        createRequest: {
-                            requestId: Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
-                            conferenceSolutionKey: { type: 'hangoutsMeet' }
-                        }
-                    }
-                } : {})
-            }
-        });
+        return await corsair.withTenant(tenantId).googlecalendar.api.events.update(payload);
     }
 }
 

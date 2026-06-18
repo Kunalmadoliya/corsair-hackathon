@@ -11,7 +11,7 @@ export const corsair: ReturnType<typeof createCorsair> = createCorsair({
             authType: "oauth_2",
             webhookHooks: {
                 messageChanged: {
-                    after: async (ctx, payload) => {
+                    after: async (ctx: any, payload: any) => {
                         const data = payload.data;
                         if (!data) return;
                         if (data.type === 'messageReceived' || data.type === 'messageLabelChanged') {
@@ -22,8 +22,8 @@ export const corsair: ReturnType<typeof createCorsair> = createCorsair({
                             const accountId = (ctx as any).accountId; // Or fetch it
                             // For simplicity we will assume tenantId was passed in webhook URL and mapped to account
                             // Actually, let's just insert it safely
-                            const subject = message.payload?.headers?.find(h => h.name?.toLowerCase() === 'subject')?.value || 'No Subject';
-                            const sender = message.payload?.headers?.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown';
+                            const subject = message.payload?.headers?.find((h: any) => h.name?.toLowerCase() === 'subject')?.value || 'No Subject';
+                            const sender = message.payload?.headers?.find((h: any) => h.name?.toLowerCase() === 'from')?.value || 'Unknown';
                             
                             try {
                                 // Extract userId from context if available, else we might need to look it up
@@ -58,7 +58,7 @@ export const corsair: ReturnType<typeof createCorsair> = createCorsair({
             authType: "oauth_2",
             webhookHooks: {
                 onEventChanged: {
-                    after: async (ctx, payload) => {
+                    after: async (ctx: any, payload: any) => {
                         const data = payload.data;
                         if (!data) return;
                         if (data.type === 'eventCreated' || data.type === 'eventUpdated') {

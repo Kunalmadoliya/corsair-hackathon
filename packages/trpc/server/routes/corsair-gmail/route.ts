@@ -161,6 +161,48 @@ export const corsairGmailRouter = router({
         return corsairGmailService.listMessages(ctx.user.id, input);
     }),
 
+    getInbox: authenticatedProcedure.meta({
+        openapi: { method: "POST", path: getPath("/getInbox"), tags: TAGS }
+    }).input(z.object({
+        maxResults: z.number().optional()
+    })).output(z.any())
+    .mutation(async ({ ctx, input }) => {
+        const listRes = await corsairGmailService.listMessages(ctx.user.id, { maxResults: input.maxResults || 15 });
+        if (!listRes.messages || listRes.messages.length === 0) {
+            return [];
+        }
+
+        const fullEmails = await Promise.all(
+            listRes.messages.map(async (m: any) => {
+                try {
+                    const details = await corsairGmailService.getMessage(ctx.user.id, { id: m.id, format: 'full' });
+                    const headers = details.payload?.headers || [];
+                    const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name)?.value || '';
+                    
+                    const fromHeader = getHeader('from');
+                    const from = fromHeader.split('<')[0].trim() || fromHeader;
+                    const subject = getHeader('subject') || 'No Subject';
+                    const dateHeader = getHeader('date');
+                    const time = dateHeader ? new Date(dateHeader).toLocaleDateString() : '';
+
+                    return {
+                        id: m.id,
+                        from,
+                        email: fromHeader,
+                        subject,
+                        preview: details.snippet || '',
+                        time,
+                        urgent: false,
+                        raw: details
+                    };
+                } catch (e) {
+                    return null;
+                }
+            })
+        );
+        return fullEmails.filter(Boolean);
+    }),
+
     modifyMessage: authenticatedProcedure.meta({
         openapi: { method: "POST", path: getPath("/modifyMessage"), tags: TAGS }
     }).input(Models.modifyMessageInputType).output(Models.modifyMessageOutputType)

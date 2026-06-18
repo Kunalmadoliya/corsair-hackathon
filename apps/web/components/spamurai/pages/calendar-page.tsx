@@ -39,6 +39,17 @@ export function CalendarPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    const isDemo = (user as any)?.isDemoMode;
+    if (isDemo) {
+      setIsLoading(false);
+      setEvents([
+        { id: "demo-1", title: "Daily Standup", day: "Mon", time: "10:00 AM", endTime: "10:30 AM", type: "recurring", attendees: ["kunal@spamurai.com", "team@spamurai.com"] },
+        { id: "demo-2", title: "Client Demo", day: "Tue", time: "2:00 PM", endTime: "3:00 PM", type: "client", attendees: ["client@example.com"] },
+        { id: "demo-3", title: "Sprint Planning", day: "Wed", time: "11:00 AM", endTime: "12:00 PM", type: "sprint", attendees: ["team@spamurai.com"] }
+      ]);
+      return;
+    }
+
     if (user?.isCalendarConnected) {
       setIsLoading(true);
       getManyEventsAsync({ maxResults: 50 }).then((res: any) => {
@@ -56,7 +67,7 @@ export function CalendarPage() {
         }
       }).catch(console.error).finally(() => setIsLoading(false));
     }
-  }, [user?.isCalendarConnected]);
+  }, [user]);
 
   const selected = events.find((e) => e.id === selectedEvent);
 

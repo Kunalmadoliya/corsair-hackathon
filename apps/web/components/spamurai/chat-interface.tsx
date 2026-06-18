@@ -96,10 +96,32 @@ export function ChatInterface({ chatId, setChatId, onNewChat }: ChatInterfacePro
           setChatId(res.chatId);
           trpcUtils.chat.listChats.invalidate();
       }
+      let finalContent = res.message;
+      let cardData: any = undefined;
+
+      const cardMatch = finalContent.match(/\[ACTION_CARD:\s*(\{.*?\})\s*\]/);
+      if (cardMatch && cardMatch[1] && cardMatch[0]) {
+          try {
+              const parsed = JSON.parse(cardMatch[1]);
+              finalContent = finalContent.replace(cardMatch[0], '').trim();
+              
+              if (parsed.type === 'EVENT_CREATED' || parsed.type === 'CALENDAR') {
+                  cardData = { type: 'calendar', data: { ...parsed, status: 'Confirmed' } };
+              } else if (parsed.type === 'EMAIL_SENT' || parsed.type === 'EMAIL') {
+                  cardData = { type: 'email', data: { to: parsed.recipient || parsed.to, subject: parsed.subject, preview: parsed.preview || '', status: 'Sent' } };
+              } else {
+                  cardData = { type: 'calendar', data: parsed };
+              }
+          } catch (e) {
+              console.error("Failed to parse ACTION_CARD JSON", e);
+          }
+      }
+
       const assistantMsg: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: res.message,
+        content: finalContent,
+        card: cardData
       };
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err: any) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usegetUser } from '~/hooks/api/auth/auth';
 import { useListMessages } from '~/hooks/api/corsair/gmail';
 import { useGetManyEvents } from '~/hooks/api/corsair/calendar';
+import { trpc } from '~/trpc/client';
 
 export function AnalyticsPage() {
   const { user } = usegetUser();
@@ -18,27 +19,35 @@ export function AnalyticsPage() {
     dailyBreakdown: [] as any[]
   });
 
+  const { data: analyticsData } = trpc.user.getAnalytics.useQuery();
+
   useEffect(() => {
     async function loadStats() {
+      const isDemo = (user as any)?.isDemoMode;
+
+      if (isDemo) {
+        setStats({
+          emailsProcessed: 1420,
+          timeSaved: '24h',
+          actionsAutomated: 156,
+          responseRate: '98%',
+          dailyBreakdown: [
+            { day: 'Mon', emails: 284, actions: 15 },
+            { day: 'Tue', emails: 426, actions: 31 },
+            { day: 'Wed', emails: 142, actions: 46 },
+            { day: 'Thu', emails: 355, actions: 31 },
+            { day: 'Fri', emails: 213, actions: 31 }
+          ]
+        });
+        return;
+      }
+
       let emails = 0;
       let actions = 0;
 
-      if (user?.isGmailConnected) {
-        try {
-          const m = await listMessagesAsync({ maxResults: 100 });
-          if (m?.messages?.messages) {
-            emails += m.messages.messages.length;
-          }
-        } catch (e) {}
-      }
-
-      if (user?.isCalendarConnected) {
-        try {
-          const ev = await listEventsAsync({ maxResults: 50 });
-          if (ev?.events?.items) {
-            actions += ev.events.items.length;
-          }
-        } catch (e) {}
+      if (analyticsData && analyticsData.length > 0) {
+          emails = analyticsData.reduce((acc: number, item: any) => acc + parseInt(item.emailsRead || '0') + parseInt(item.emailsSent || '0'), 0);
+          actions = analyticsData.reduce((acc: number, item: any) => acc + parseInt(item.eventsCreated || '0'), 0);
       }
 
       setStats({
@@ -57,7 +66,7 @@ export function AnalyticsPage() {
     }
 
     loadStats();
-  }, [user]);
+  }, [user, analyticsData]);
 
   return (
     <div className="flex-1 overflow-y-auto custom-scroll p-6">

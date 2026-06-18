@@ -48,37 +48,6 @@ class CorsairGmailServices {
 
         const tenantId = gmailResult.tenantId;
 
-        try {
-            const internalCfg = (corsair as any)[
-                Object.getOwnPropertySymbols(corsair as any).find(
-                    (s) => typeof (corsair as any)[s]?.kek === "string"
-                )!
-            ] as { kek: string; database: any };
-
-            const kek = internalCfg?.kek ?? env.CORSAIR_KEK;
-            const database = internalCfg?.database;
-
-            if (kek && database) {
-                const gmailKeyManager = createAccountKeyManager({
-                    authType: "oauth_2",
-                    integrationName: "gmail",
-                    tenantId,
-                    kek,
-                    database,
-                });
-                
-                const accessToken = await gmailKeyManager.get_access_token();
-                const refreshToken = await gmailKeyManager.get_refresh_token();
-                const expiresAt = await gmailKeyManager.get_expires_at();
-
-                if (accessToken) {
-                    await setupCorsair(corsair, { tenantId });
-                }
-            }
-        } catch (calendarErr) {
-            console.warn("[corsair] token fetch failed (non-fatal):", calendarErr);
-        }
-
         await db
             .update(usersTable)
             .set({ isGmailConnected: true })

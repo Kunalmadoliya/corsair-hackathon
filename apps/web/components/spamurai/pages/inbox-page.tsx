@@ -6,14 +6,13 @@ import { cn } from '~/lib/utils';
 import { Button } from '~/components/ui/button';
 import { useToast } from '~/hooks/use-toast';
 import { usegetUser } from '~/hooks/api/auth/auth';
-import { useListMessages, useGetMessage, useSendMessage } from '~/hooks/api/corsair/gmail';
+import { useGetInbox, useSendMessage } from '~/hooks/api/corsair/gmail';
 
 export function InboxPage() {
   const { toast } = useToast();
   const { user } = usegetUser();
 
-  const { listMessagesAsync, isPending: isLoadingList } = useListMessages();
-  const { getMessageAsync } = useGetMessage();
+  const { getInboxAsync, isPending: isLoadingList } = useGetInbox();
 
   const [emailList, setEmailList] = useState<any[]>([]);
   const [selectedEmailData, setSelectedEmailData] = useState<any>(null);
@@ -35,104 +34,103 @@ export function InboxPage() {
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   useEffect(() => {
+    const isDemo = (user as any)?.isDemoMode;
+
+    if (isDemo) {
+      setIsFetchingDetails(false);
+      setEmailList([
+        {
+          id: 'demo-1',
+          from: 'Kunal Madoliya',
+          email: 'kunal@spamurai.com',
+          subject: 'Welcome to Spamurai Demo',
+          preview: 'This is a demo email. Your real emails will appear here once connected.',
+          time: new Date().toLocaleDateString(),
+          urgent: false,
+          isHtml: false,
+          body: 'Hello,\n\nThis is a demo email from the Spamurai team. You have enabled Demo Mode in your settings, so we are showing you placeholder data instead of your real inbox.\n\nTo view your actual emails, disable Demo Mode in the Settings tab.\n\nBest,\nThe Spamurai Team',
+          raw: null
+        },
+        {
+          id: 'demo-2',
+          from: 'GitHub',
+          email: 'noreply@github.com',
+          subject: '[GitHub] Dependabot Alert',
+          preview: 'Dependabot has discovered a vulnerability...',
+          time: 'Yesterday',
+          urgent: true,
+          isHtml: false,
+          body: 'Dependabot has discovered a vulnerability in your repository. Please review and merge the PR.',
+          raw: null
+        }
+      ]);
+      return;
+    }
+
     if (user?.isGmailConnected) {
       setIsFetchingDetails(true);
-      listMessagesAsync({ maxResults: 15 }).then(async (res) => {
-        if (res?.messages) {
-           const basicList = res.messages.map((m: any) => ({
-             id: m.id,
-             from: "Loading...",
-             subject: "Loading...",
-             preview: "Loading...",
-             time: "",
-             urgent: false
-           }));
-           setEmailList(basicList);
-
-           // Fetch details for each message
-           const fullEmails = await Promise.all(
-             res.messages.map(async (m: any) => {
-               try {
-                 const details = await getMessageAsync({ id: m.id, format: 'full' });
-                 const headers = details.payload?.headers || [];
-                 const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name)?.value || '';
-                 
-                 const fromHeader = getHeader('from');
-                 const from = fromHeader.split('<')[0].trim() || fromHeader;
-                 const subject = getHeader('subject') || 'No Subject';
-                 const dateHeader = getHeader('date');
-                 const time = dateHeader ? new Date(dateHeader).toLocaleDateString() : '';
-
-                 return {
-                   id: m.id,
-                   from,
-                   email: fromHeader,
-                   subject,
-                   preview: details.snippet || '',
-                   time,
-                   urgent: false,
-                   raw: details
-                 };
-               } catch (e) {
-                 return null;
-               }
-             })
-           );
-           setEmailList(fullEmails.filter(Boolean));
+      getInboxAsync({ maxResults: 15 }).then((res: any[]) => {
+        if (res && Array.isArray(res)) {
+           setEmailList(res);
         }
       }).catch(console.error).finally(() => {
         setIsFetchingDetails(false);
       });
     }
-  }, [user?.isGmailConnected]);
+  }, [user]);
 
   useEffect(() => {
     if (selectedEmail) {
       const email = emailList.find(e => e.id === selectedEmail);
-      if (email && email.raw) {
-         // Decode body robustly with UTF-8 support
-         const decodeBase64Utf8 = (base64: string) => {
-            try {
-                const binString = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-                const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
-                return new TextDecoder().decode(bytes);
-            } catch (e) {
-                return "";
-            }
-         };
+      if (email) {
+        if (email.raw) {
+           // Decode body robustly with UTF-8 support
+           const decodeBase64Utf8 = (base64: string) => {
+              try {
+                  const binString = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+                  const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
+                  return new TextDecoder().decode(bytes);
+              } catch (e) {
+                  return "";
+              }
+           };
 
-         const extractBody = (payload: any): { text: string, html: boolean } => {
-             if (!payload) return { text: "", html: false };
-             if (payload.mimeType === 'text/html' && payload.body?.data) {
-                 return { text: decodeBase64Utf8(payload.body.data), html: true };
-             }
-             if (payload.mimeType === 'text/plain' && payload.body?.data) {
-                 return { text: decodeBase64Utf8(payload.body.data), html: false };
-             }
-             if (payload.parts && payload.parts.length > 0) {
-                 for (const part of payload.parts) {
-                     if (part.mimeType === 'text/html' && part.body?.data) {
-                         return { text: decodeBase64Utf8(part.body.data), html: true };
-                     }
-                 }
-                 for (const part of payload.parts) {
-                     if (part.mimeType === 'text/plain' && part.body?.data) {
-                         return { text: decodeBase64Utf8(part.body.data), html: false };
-                     }
-                 }
-                 for (const part of payload.parts) {
-                     const extracted = extractBody(part);
-                     if (extracted.text) return extracted;
-                 }
-             }
-             if (payload.body?.data) {
-                 return { text: decodeBase64Utf8(payload.body.data), html: false };
-             }
-             return { text: "", html: false };
-         };
+           const extractBody = (payload: any): { text: string, html: boolean } => {
+               if (!payload) return { text: "", html: false };
+               if (payload.mimeType === 'text/html' && payload.body?.data) {
+                   return { text: decodeBase64Utf8(payload.body.data), html: true };
+               }
+               if (payload.mimeType === 'text/plain' && payload.body?.data) {
+                   return { text: decodeBase64Utf8(payload.body.data), html: false };
+               }
+               if (payload.parts && payload.parts.length > 0) {
+                   for (const part of payload.parts) {
+                       if (part.mimeType === 'text/html' && part.body?.data) {
+                           return { text: decodeBase64Utf8(part.body.data), html: true };
+                       }
+                   }
+                   for (const part of payload.parts) {
+                       if (part.mimeType === 'text/plain' && part.body?.data) {
+                           return { text: decodeBase64Utf8(part.body.data), html: false };
+                       }
+                   }
+                   for (const part of payload.parts) {
+                       const extracted = extractBody(part);
+                       if (extracted.text) return extracted;
+                   }
+               }
+               if (payload.body?.data) {
+                   return { text: decodeBase64Utf8(payload.body.data), html: false };
+               }
+               return { text: "", html: false };
+           };
 
-         const extracted = extractBody(email.raw.payload);
-         setSelectedEmailData({ ...email, body: extracted.text, isHtml: extracted.html });
+           const extracted = extractBody(email.raw.payload);
+           setSelectedEmailData({ ...email, body: extracted.text, isHtml: extracted.html });
+        } else {
+           // Demo email fallback
+           setSelectedEmailData(email);
+        }
       }
     } else {
       setSelectedEmailData(null);

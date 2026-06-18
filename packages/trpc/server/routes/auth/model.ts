@@ -50,4 +50,5 @@ export const getUserWithTokenOutputModel = z.object({
     profileImageUrl: z.string().nullable().describe("Profile image URL of the user"),
     isGmailConnected: z.boolean().describe("Whether the user has connected Gmail"),
     isCalendarConnected: z.boolean().describe("Whether the user has connected Google Calendar"),
+    isDemoMode: z.boolean().describe("Whether Demo Mode is enabled"),
 })

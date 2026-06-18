@@ -7,6 +7,7 @@ import { Button } from '~/components/ui/button';
 import { useToast } from '~/hooks/use-toast';
 import { usegetUser } from '~/hooks/api/auth/auth';
 import { useTheme } from 'next-themes';
+import { trpc } from '~/trpc/client';
 
 const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -45,6 +46,8 @@ export function SettingsPage() {
     setTheme(nextTheme ? 'light' : 'dark');
     toast({ description: `Switched to ${nextTheme ? 'light' : 'dark'} theme` });
   };
+
+  const toggleDemoMode = trpc.user.toggleDemoMode.useMutation();
 
   const handleSave = () => { toast({ description: 'Settings saved' }); };
 
@@ -121,7 +124,7 @@ export function SettingsPage() {
 
             {activeTab === 'appearance' && (
               <div className="rounded-xl border border-border/40 bg-card p-6 space-y-5">
-                <h3 className="text-base font-semibold">Appearance</h3>
+                <h3 className="text-base font-semibold">Appearance & Modes</h3>
                 <p className="text-sm text-muted-foreground">Choose your preferred theme.</p>
                 <div className="flex items-center gap-4">
                   <button onClick={() => { if (isLightTheme) handleThemeToggle(); }}
@@ -139,9 +142,30 @@ export function SettingsPage() {
                     {isLightTheme && <Check className="w-3 h-3 text-primary" />}
                   </button>
                 </div>
+
+                <div className="pt-4 border-t border-border/40">
+                  <h4 className="text-sm font-medium mb-2">Demo Mode</h4>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Toggle Demo Mode to see placeholder data instead of your real connected accounts.
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Enable Demo Mode</span>
+                    <button onClick={() => {
+                      const newMode = !(user as any)?.isDemoMode;
+                      toggleDemoMode.mutate({ isDemoMode: newMode }, {
+                        onSuccess: () => {
+                          toast({ description: `Demo Mode ${newMode ? 'enabled' : 'disabled'}.` });
+                          window.location.reload();
+                        }
+                      });
+                    }}
+                      className={cn('w-10 h-5 rounded-full transition-all relative', (user as any)?.isDemoMode ? 'bg-primary' : 'bg-secondary border border-border')}>
+                      <div className={cn('w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all shadow-sm', (user as any)?.isDemoMode ? 'left-5' : 'left-0.5')} />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
-
 
             {activeTab === 'api' && (
               <div className="rounded-xl border border-border/40 bg-card p-6 space-y-5">

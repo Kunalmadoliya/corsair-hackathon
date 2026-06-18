@@ -144,3 +144,8 @@ export const useUntrashThread = () => {
     const { mutateAsync: untrashThreadAsync, mutate: untrashThread, isPending, error } = trpc.corsairGmail.untrashThread.useMutation();
     return { untrashThreadAsync, untrashThread, isPending, error };
 }
+
+export const useGetInbox = () => {
+    const { mutateAsync: getInboxAsync, mutate: getInbox, isPending, error } = trpc.corsairGmail.getInbox.useMutation();
+    return { getInboxAsync, getInbox, isPending, error };
+}
