@@ -1,3 +1,4 @@
+"use client";
 import { createTRPCReact } from "@trpc/react-query";
 import { ServerRouter } from "@repo/trpc/client";
 

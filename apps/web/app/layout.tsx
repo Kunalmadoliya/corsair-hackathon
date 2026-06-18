@@ -41,7 +41,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans`}>
-        <GlobalProviders>{children}</GlobalProviders>
+        <GlobalProviders>
+          {children}
+        </GlobalProviders>
       </body>
     </html>
   );
