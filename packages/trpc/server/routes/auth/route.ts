@@ -78,8 +78,8 @@ export const authRouter = router({
 
       ctx.setCookie("token", token, {
         httpOnly: true,
-        secure:env.NODE_ENV === "prod",
-        sameSite: "strict",
+        secure: env.NODE_ENV === "production" || env.NODE_ENV === "prod",
+        sameSite: env.NODE_ENV === "production" || env.NODE_ENV === "prod" ? "none" : "lax",
         maxAge: 60 * 60 * 24 * 7,
         path: "/"
       })
@@ -100,8 +100,8 @@ export const authRouter = router({
 
       ctx.setCookie("token", token, {
         httpOnly: true,
-        secure: env.NODE_ENV === "prod",
-        sameSite: "strict",
+        secure: env.NODE_ENV === "production" || env.NODE_ENV === "prod",
+        sameSite: env.NODE_ENV === "production" || env.NODE_ENV === "prod" ? "none" : "lax",
         maxAge: 60 * 60 * 24 * 7,
         path: "/"
       })

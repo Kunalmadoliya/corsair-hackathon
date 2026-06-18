@@ -113,32 +113,32 @@ export function LandingPage() {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[320px] gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[250px] gap-6"
         >
           {/* Bento Box 1: Hero Command (Spans 2x2) */}
           <motion.div 
             variants={itemVariants}
-            className="lg:col-span-2 lg:row-span-2 flex flex-col justify-center rounded-3xl border border-border bg-card/40 backdrop-blur-md p-10 lg:p-14 relative overflow-hidden group hover:border-foreground/30 transition-all duration-500"
+            className="lg:col-span-2 lg:row-span-2 flex flex-col justify-center rounded-3xl border border-border bg-card/40 backdrop-blur-md p-10 lg:p-8 relative overflow-hidden group hover:border-foreground/30 transition-all duration-500"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-[80px] group-hover:bg-foreground/10 transition-colors duration-500 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-30 h-60   bg-foreground/5 rounded-full blur-[80px] group-hover:bg-foreground/10 transition-colors duration-500 pointer-events-none" />
             
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/5 w-fit mb-6">
               <Sparkles className="w-4 h-4 text-foreground animate-pulse" />
               <span className="text-xs font-bold tracking-wide uppercase text-foreground">
-                AI Comm OS
+                Your AI Assistant
               </span>
             </div>
 
             <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[1.1] text-foreground">
-              Master <br className="hidden md:block" />
-              Communication. <br />
+              Manage your <br className="hidden md:block" />
+              entire workday <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground">
-                Through AI.
+                with plain English.
               </span>
             </h1>
 
-            <p className="mt-6 text-lg text-muted-foreground max-w-md font-medium leading-relaxed">
-              One workspace. One conversation to orchestrate your entire communications stack. Tell Spamurai what you need, let AI handle the heavy lifting.
+            <p className="text-lg text-muted-foreground max-w-md font-medium leading-relaxed">
+              Stop juggling apps. Spamurai connects your Gmail, Calendar, and tasks into one simple chat interface. Just tell the AI what to do, and it gets done.
             </p>
 
             <div className="mt-10 flex items-center gap-4">
@@ -232,25 +232,25 @@ export function LandingPage() {
 
           {/* Bento Box 3: Step 01 (1x1) */}
           <BentoStepCard 
-            step="01" 
-            title="Instruct" 
-            desc="Send natural language commands. Zero complex interfaces."
+           
+            title="Type a Command" 
+            desc="Just tell Spamurai what you want in plain English. No complex menus."
             icon={MessageSquare} 
           />
 
           {/* Bento Box 4: Step 02 (1x1) */}
           <BentoStepCard 
-            step="02" 
-            title="AI Stages Work" 
-            desc="Agent drafts, checks calendars, and builds tasks silently."
+           
+            title="AI Does the Work" 
+            desc="Our AI instantly drafts emails, finds meeting times, and organizes tasks."
             icon={Zap} 
           />
 
           {/* Bento Box 5: Step 03 (1x1) */}
           <BentoStepCard 
-            step="03" 
-            title="Deploy" 
-            desc="Review the execution plan in the console and hit deploy."
+            
+            title="Review & Send" 
+            desc="Check the AI's work and hit approve. Your workday, simplified."
             icon={Shield} 
           />
 
@@ -277,7 +277,7 @@ export function LandingPage() {
         <section id="pricing" className="pt-12 pb-24 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">
-              Transparent <span className="text-muted-foreground">Pricing.</span>
+              Simple Pricing. <span className="text-muted-foreground">No Surprises.</span>
             </h2>
           </div>
 
@@ -358,19 +358,17 @@ export function LandingPage() {
 }
 
 // --- Subcomponent: Small Bento Box for Steps ---
-function BentoStepCard({ step, title, desc, icon: Icon }: { step: string, title: string, desc: string, icon: React.ElementType }) {
+function BentoStepCard({  title, desc, icon: Icon }: {  title: string, desc: string, icon: React.ElementType }) {
   return (
     <motion.div 
       variants={itemVariants}
       className="col-span-1 rounded-3xl border border-border bg-card/40 backdrop-blur-md p-8 relative overflow-hidden group hover:border-foreground/30 transition-colors"
     >
-      <div className="absolute -bottom-6 -right-6 text-9xl font-black text-foreground/[0.02] pointer-events-none transition-transform group-hover:scale-110 group-hover:-translate-y-2 group-hover:-translate-x-2 duration-500">
-        {step}
-      </div>
+     
       <div className="w-10 h-10 rounded-xl bg-muted border border-border flex items-center justify-center mb-6 group-hover:bg-foreground transition-colors duration-300">
         <Icon className="w-5 h-5 text-muted-foreground group-hover:text-background transition-colors duration-300" />
       </div>
-      <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">Step {step}</div>
+      
       <h3 className="text-lg font-bold mb-2 text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground font-medium leading-relaxed relative z-10">{desc}</p>
     </motion.div>

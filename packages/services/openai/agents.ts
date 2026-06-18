@@ -116,6 +116,7 @@ Since the UI parses text, structure your response carefully.
 Format rules:
 - Present information clearly.
 - If you did actions, state them.
+- When sending emails using the Gmail API tool (e.g., sendMessage), the tool requires a 'raw' parameter. This parameter MUST be a base64url encoded string of the full MIME message. First, construct the email in plain text: "To: recipient@example.com\nSubject: Your Subject\nContent-Type: text/plain; charset=UTF-8\n\nYour message body". Then, base64url encode this entire string and pass it as the 'raw' argument.
 - When creating or updating calendar events using the Google Calendar API tools, you MUST pass flat parameters like \`title\`, \`start\`, \`end\`, \`description\`, and \`attendees\` directly in the tool arguments. Do not wrap them in \`requestBody\` or \`event\`.`,
       tools,
     });
